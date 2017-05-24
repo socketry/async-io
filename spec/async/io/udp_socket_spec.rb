@@ -24,7 +24,7 @@ RSpec.describe Async::Reactor do
 	include_context Async::RSpec::Leaks
 	
 	# Shared port for localhost network tests.
-	let(:server_address) {Addrinfo.udp("127.0.0.1", 6778)}
+	let(:server_address) {Async::IO::Address.udp("127.0.0.1", 6778)}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
 	describe 'basic udp server' do
@@ -59,7 +59,7 @@ RSpec.describe Async::Reactor do
 			end
 			
 			subject.async do
-				Async::IO::UDPSocket.wrap(server_address.afamily) do |client|
+				Async::IO::UDPSocket.wrap(server_address.family) do |client|
 					client.send(data, 0, server_address)
 					response, address = client.recvfrom(512)
 					

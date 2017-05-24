@@ -10,7 +10,11 @@ Gem::Specification.new do |spec|
 	spec.summary       = "Provides support for asynchonous TCP, UDP, UNIX and SSL sockets."
 	spec.homepage      = "https://github.com/socketry/async-io"
 
+	spec.files         = `git ls-files`.split($/)
+	spec.executables   = spec.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+	spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
 	spec.require_paths = ["lib"]
+	spec.has_rdoc      = "yard"
 
 	spec.add_dependency "async", "~> 0.14"
 	spec.add_development_dependency "async-rspec", "~> 1.0"

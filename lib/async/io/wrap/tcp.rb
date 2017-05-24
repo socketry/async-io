@@ -27,9 +27,9 @@ module Async
 				def self.new(*args)
 					case args.size
 					when 2
-						local_address = Addrinfo.tcp(*args)
+						local_address = Async::IO::Address.tcp(*args)
 					when 1
-						local_address = Addrinfo.tcp("0.0.0.0", *args)
+						local_address = Async::IO::Address.tcp("0.0.0.0", *args)
 					else
 						raise ArgumentError, "TCPServer.new([hostname], port)"
 					end
@@ -40,10 +40,10 @@ module Async
 			
 			module TCPSocket
 				def self.new(remote_host, remote_port, local_host=nil, local_port=nil)
-					remote_address = Addrinfo.tcp(remote_host, remote_port)
+					remote_address = Async::IO::Address.tcp(remote_host, remote_port)
 					
 					if local_host && local_port
-						local_address = Addrinfo.tcp(local_host, local_port)
+						local_address = Async::IO::Address.tcp(local_host, local_port)
 					end
 					
 					return Async::IO::Socket.connect(remote_address, local_address)

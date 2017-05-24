@@ -24,13 +24,13 @@ RSpec.describe Async::Reactor do
 	include_context Async::RSpec::Leaks
 	
 	# Shared port for localhost network tests.
-	let(:server_address) {Addrinfo.tcp("localhost", 6779)}
+	let(:server_address) {Async::IO::Address.tcp("localhost", 6779)}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
 	around(:each) do |example|
 		# Accept a single incoming connection and then finish.
 		subject.async do |task|
-			Async::IO::Socket.bind(server_address, backlog: 128) do |server|
+			Async::IO::Socket.bind(server_address) do |server|
 				server.accept do |peer, address|
 					data = peer.read(512)
 					peer.write(data)
@@ -105,8 +105,6 @@ RSpec.describe Async::Reactor do
 						# expect(socket.read(512)).to be == data
 					end
 				end.to_not raise_error
-				
-				puts "foo"
 				
 				socket.close
 			end

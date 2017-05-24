@@ -38,6 +38,8 @@ module Async
 		class Socket < BasicSocket
 			wraps ::Socket, :bind, :ipv6only!, :listen
 			
+			include ::Socket::Constants
+			
 			def accept
 				peer, address = async_send(:accept_nonblock)
 				
@@ -64,20 +66,24 @@ module Async
 			
 			# Establish a connection to a given `remote_address`.
 			# @example
-			#  socket = Async::IO::Socket.connect(Addrinfo.tcp("8.8.8.8", 53))
+			#  socket = Async::IO::Socket.connect(Async::IO::Address.tcp("8.8.8.8", 53))
 			# @param remote_address [Addrinfo] The remote address to connect to.
 			# @param local_address [Addrinfo] The local address to bind to before connecting.
 			# @option protcol [Integer] The socket protocol to use.
 			def self.connect(remote_address, local_address = nil, protocol: 0, task: Task.current)
-				socket = ::Socket.new(remote_address.afamily, remote_address.socktype, protocol)
+				task.annotate "connecting to #{remote_address.inspect}"
+				
+				socket = ::Socket.new(remote_address.family, remote_address.type, protocol)
 				
 				if local_address
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
-					socket.bind(local_address) if local_address
+					socket.bind(local_address.to_sockaddr) if local_address
 				end
 				
 				wrapper = self.new(socket, task.reactor)
 				wrapper.connect(remote_address.to_sockaddr)
+				
+				task.annotate "connected to #{remote_address.inspect}"
 				
 				if block_given?
 					begin
@@ -92,16 +98,23 @@ module Async
 			
 			# Bind to a local address.
 			# @example
-			#  socket = Async::IO::Socket.bind(Addrinfo.tcp("0.0.0.0", 9090))
-			# @param local_address [Addrinfo] The local address to bind to.
+			#  socket = Async::IO::Socket.bind(Async::IO::Address.tcp("0.0.0.0", 9090))
+			# @param local_address [Address] The local address to bind to.
 			# @option protcol [Integer] The socket protocol to use.
 			def self.bind(local_address, backlog: nil, protocol: 0, task: Task.current, &block)
-				socket = ::Socket.new(local_address.afamily, local_address.socktype, protocol)
+				task.annotate "binding to #{local_address.inspect}"
+				
+				socket = ::Socket.new(local_address.family, local_address.type, protocol)
 				
 				socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
-				socket.bind(local_address)
+				socket.bind(local_address.to_sockaddr)
 				
-				socket.listen(backlog) if backlog
+				if backlog
+					socket.listen(backlog)
+				elsif local_address.type == SOCK_STREAM
+					# We set a default value for stream based connections:
+					socket.listen(SOMAXCONN)
+				end
 				
 				wrapper = self.new(socket, task.reactor)
 				
@@ -118,9 +131,19 @@ module Async
 			
 			# Bind to a local address and accept connections in a loop.
 			def self.accept(*args, &block)
-				bind(*args) do |wrapper, task|
+				bind(*args) do |server, task|
 					while true
-						yield *wrapper.accept
+						task.annotate "accepting connections #{args.inspect}"
+						
+						task.async(*server.accept) do |task, io, address|
+							task.annotate "incoming connection #{address}"
+							
+							begin
+								yield io, address
+							ensure
+								io.close
+							end
+						end
 					end
 				end
 			end
