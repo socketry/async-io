@@ -29,6 +29,7 @@ module Async
 			# We pass `send` through directly, but in theory it might block. Internally, it uses sendto.
 			def_delegators :@io, :send
 			
+			# This function is so fucked. Why does `UDPSocket#recvfrom` return the remote address as an array, but `Socket#recfrom` return it as an `Addrinfo`? You should prefer `recvmsg`.
 			wrap_blocking_method :recvfrom, :recvfrom_nonblock
 		end
 	end

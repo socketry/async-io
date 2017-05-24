@@ -39,13 +39,13 @@ module Async
 					self.new([:unix, *args], **options)
 				end
 				
-				def each(addresses, &block)
-					interfaces.each do |interface|
-						if interface.is_a? self
+				def each(specifications, &block)
+					specifications.each do |specification|
+						if specification.is_a? self
 							yield self
 						else
 							# Perhaps detect options here?
-							yield self.new(interface)
+							yield self.new(specification)
 						end
 					end
 				end
@@ -94,17 +94,33 @@ module Async
 					Socket.bind(Addrinfo.send(*specification), **options, &block)
 				when ::BasicSocket
 					yield Socket.new(specification)
+				when BasicSocket
+					yield specification
 				else
 					raise ArgumentError, "Not sure how to bind to #{specification}!"
 				end
 			end
 			
-			def connect(*args)
-				Socket.connect(self)
+			def accept(&block)
+				backlog = self.options.fetch(:backlog, SOMAXCONN)
+				
+				bind do |socket|
+					socket.listen(backlog)
+					socket.accept_each(&block)
+				end
 			end
 			
-			def bind(*args, **options, &block)
-				Socket.bind(*args, **options.merge(self.options), &block)
+			def connect(&block)
+				case specification
+				when Addrinfo, Array
+					Socket.connect(self, &block)
+				when ::BasicSocket
+					yield Async::IO.try_convert(specification)
+				when BasicSocket
+					yield specification
+				else
+					raise ArgumentError, "Not sure how to bind to #{specification}!"
+				end
 			end
 			
 			private
@@ -116,6 +132,8 @@ module Async
 					when Array
 						Addrinfo.send(*specification)
 					when ::BasicSocket
+						specification.local_address
+					when BasicSocket
 						specification.local_address
 				else
 					raise ArgumentError, "Not sure how to convert #{specification} into address!"

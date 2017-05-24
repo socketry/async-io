@@ -31,21 +31,7 @@ module Async
 		class TCPServer < TCPSocket
 			wraps ::TCPServer, :listen
 			
-			def accept
-				peer, address = async_send(:accept_nonblock)
-				
-				if block_given?
-					wrapper = TCPSocket.new(peer, self.reactor)
-					
-					begin
-						yield wrapper, address
-					ensure
-						wrapper.close
-					end
-				else
-					return TCPSocket.new(peer, self.reactor), address
-				end
-			end
+			include ServerSocket
 		end
 	end
 end

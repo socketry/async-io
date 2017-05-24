@@ -35,11 +35,7 @@ module Async
 			wrap_blocking_method :send, :sendmsg_nonblock, invert: false
 		end
 		
-		class Socket < BasicSocket
-			wraps ::Socket, :bind, :ipv6only!, :listen
-			
-			include ::Socket::Constants
-			
+		module ServerSocket
 			def accept
 				peer, address = async_send(:accept_nonblock)
 				
@@ -55,6 +51,30 @@ module Async
 					return Socket.new(peer, self.reactor), address
 				end
 			end
+			
+			def accept_each(task: Task.current)
+				task.annotate "accepting connections #{self.local_address.inspect}"
+				
+				while true
+					task.async(*self.accept) do |task, io, address|
+						task.annotate "incoming connection #{address}"
+						
+						begin
+							yield io, address
+						ensure
+							io.close
+						end
+					end
+				end
+			end
+		end
+		
+		class Socket < BasicSocket
+			wraps ::Socket, :bind, :ipv6only!, :listen
+			
+			include ::Socket::Constants
+			
+			include ServerSocket
 			
 			def connect(*args)
 				begin
@@ -127,19 +147,7 @@ module Async
 				bind(*args) do |server, task|
 					server.listen(backlog) if backlog
 					
-					while true
-						task.annotate "accepting connections #{args.inspect}"
-						
-						task.async(*server.accept) do |task, io, address|
-							task.annotate "incoming connection #{address}"
-							
-							begin
-								yield io, address
-							ensure
-								io.close
-							end
-						end
-					end
+					server.accept_each(task: task, &block)
 				end
 			end
 		end

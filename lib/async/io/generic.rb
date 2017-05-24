@@ -27,6 +27,8 @@ module Async
 		class Generic < Wrapper
 			extend Forwardable
 			
+			WRAPPERS = {}
+			
 			class << self
 				# @!macro [attach] wrap_blocking_method
 				#   @method $1
@@ -49,6 +51,7 @@ module Async
 				
 				def wraps(klass, *additional_methods)
 					@wrapped_klass = klass
+					WRAPPERS[klass] = self
 					
 					# These are methods implemented by the wrapped class, that we aren't overriding, that may be of interest:
 					# fallback_methods = klass.instance_methods(false) - instance_methods
