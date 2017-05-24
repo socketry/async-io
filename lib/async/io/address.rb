@@ -20,6 +20,11 @@
 
 require_relative 'socket'
 
+class Addrinfo
+	alias family afamily
+	alias type socktype
+end
+
 module Async
 	module IO
 		class Address < Struct.new(:specification, :options)
