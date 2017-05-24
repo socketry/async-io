@@ -73,7 +73,7 @@ module Async
 			def self.connect(remote_address, local_address = nil, protocol: 0, task: Task.current)
 				task.annotate "connecting to #{remote_address.inspect}"
 				
-				socket = ::Socket.new(remote_address.family, remote_address.type, protocol)
+				socket = ::Socket.new(remote_address.afamily, remote_address.socktype, protocol)
 				
 				if local_address
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
@@ -101,20 +101,13 @@ module Async
 			#  socket = Async::IO::Socket.bind(Async::IO::Address.tcp("0.0.0.0", 9090))
 			# @param local_address [Address] The local address to bind to.
 			# @option protcol [Integer] The socket protocol to use.
-			def self.bind(local_address, backlog: nil, protocol: 0, task: Task.current, &block)
+			def self.bind(local_address, protocol: 0, task: Task.current, &block)
 				task.annotate "binding to #{local_address.inspect}"
 				
-				socket = ::Socket.new(local_address.family, local_address.type, protocol)
+				socket = ::Socket.new(local_address.afamily, local_address.socktype, protocol)
 				
 				socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 				socket.bind(local_address.to_sockaddr)
-				
-				if backlog
-					socket.listen(backlog)
-				elsif local_address.type == SOCK_STREAM
-					# We set a default value for stream based connections:
-					socket.listen(SOMAXCONN)
-				end
 				
 				wrapper = self.new(socket, task.reactor)
 				
@@ -130,8 +123,10 @@ module Async
 			end
 			
 			# Bind to a local address and accept connections in a loop.
-			def self.accept(*args, &block)
+			def self.accept(*args, backlog: SOMAXCONN, &block)
 				bind(*args) do |server, task|
+					server.listen(backlog) if backlog
+					
 					while true
 						task.annotate "accepting connections #{args.inspect}"
 						

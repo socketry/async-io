@@ -20,11 +20,6 @@
 
 require_relative 'socket'
 
-class Addrinfo
-	alias family afamily
-	alias type socktype
-end
-
 module Async
 	module IO
 		class Address < Struct.new(:specification, :options)
@@ -64,12 +59,24 @@ module Async
 			# This is how addresses are internally converted, e.g. within `Socket#sendto`.
 			alias to_str to_sockaddr
 			
-			def type
+			def socktype
 				addrinfo.socktype
 			end
 			
-			def family
+			def afamily
 				addrinfo.afamily
+			end
+			
+			def type
+				case self.socktype
+				when SOCK_STREAM then :stream
+				when SOCK_DGRAM then :datagram
+				when SOCK_SEQPACKET then :datagram
+				when SOCK_RDM then :datagram
+				when SOCK_RAW then :raw
+				else
+					raise ArgumentError, "Unknown socket type #{self.socktype}"
+				end
 			end
 			
 			# def connect? accept? DatagramHandler StreamHandler

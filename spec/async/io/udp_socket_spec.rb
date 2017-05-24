@@ -59,7 +59,7 @@ RSpec.describe Async::Reactor do
 			end
 			
 			subject.async do
-				Async::IO::UDPSocket.wrap(server_address.family) do |client|
+				Async::IO::UDPSocket.wrap(server_address.afamily) do |client|
 					client.send(data, 0, server_address)
 					response, address = client.recvfrom(512)
 					

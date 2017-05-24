@@ -25,7 +25,8 @@ RSpec.describe Async::IO::Address do
 	
 	describe Async::IO::Address.new([:tcp, '0.0.0.0', 1234]) do
 		it "should be a tcp binding" do
-			expect(subject.type).to be == ::Socket::SOCK_STREAM
+			expect(subject.socktype).to be == ::Socket::SOCK_STREAM
+			expect(subject.type).to be == :stream
 		end
 		
 		it "should generate valid address" do
@@ -35,7 +36,8 @@ RSpec.describe Async::IO::Address do
 	
 	describe Async::IO::Address.new(TCPServer.new('0.0.0.0', 1234)) do
 		it "should be a tcp binding" do
-			expect(subject.type).to be == ::Socket::SOCK_STREAM
+			expect(subject.socktype).to be == ::Socket::SOCK_STREAM
+			expect(subject.type).to be == :stream
 		end
 		
 		it "should generate valid address" do
