@@ -25,6 +25,8 @@ module Async
 		module Wrap
 			module TCPServer
 				def self.new(*args)
+					return ::TCPServer.new(*args) unless Task.current?
+					
 					case args.size
 					when 2
 						local_address = Async::IO::Address.tcp(*args)
@@ -40,6 +42,8 @@ module Async
 			
 			module TCPSocket
 				def self.new(remote_host, remote_port, local_host=nil, local_port=nil)
+					return ::TCPSocket.new(remote_host, remote_port, local_host, local_port) unless Task.current?
+					
 					remote_address = Async::IO::Address.tcp(remote_host, remote_port)
 					
 					if local_host && local_port
