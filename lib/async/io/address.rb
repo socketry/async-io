@@ -27,16 +27,27 @@ module Async
 			include Comparable
 			
 			class << self
-				def tcp(*args)
-					self.new([:tcp, *args])
+				def tcp(*args, **options)
+					self.new([:tcp, *args], **options)
 				end
 				
-				def udp(*args)
-					self.new([:udp, *args])
+				def udp(*args, **options)
+					self.new([:udp, *args], **options)
 				end
 				
-				def unix(*args)
-					self.new([:unix, *args])
+				def unix(*args, **options)
+					self.new([:unix, *args], **options)
+				end
+				
+				def each(addresses, &block)
+					interfaces.each do |interface|
+						if interface.is_a? self
+							yield self
+						else
+							# Perhaps detect options here?
+							yield self.new(interface)
+						end
+					end
 				end
 			end
 			
@@ -63,21 +74,15 @@ module Async
 				addrinfo.socktype
 			end
 			
+			# Preferred accessor for socket type.
+			alias type socktype
+			
 			def afamily
 				addrinfo.afamily
 			end
 			
-			def type
-				case self.socktype
-				when SOCK_STREAM then :stream
-				when SOCK_DGRAM then :datagram
-				when SOCK_SEQPACKET then :datagram
-				when SOCK_RDM then :datagram
-				when SOCK_RAW then :raw
-				else
-					raise ArgumentError, "Unknown socket type #{self.socktype}"
-				end
-			end
+			# Preferred accessor for address family.
+			alias family afamily
 			
 			# def connect? accept? DatagramHandler StreamHandler
 			
