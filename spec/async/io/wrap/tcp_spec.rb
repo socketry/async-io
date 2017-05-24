@@ -27,7 +27,7 @@ RSpec.describe Async::IO::Wrap::TCPSocket do
 	
 	before(:all) do
 		# This injects the asynchronous sockets into Net::HTTP.
-		Net::HTTP.include(Async::IO::Wrap)
+		Net::HTTP.send(:include, Async::IO::Wrap)
 	end
 	
 	it "should fetch page" do
