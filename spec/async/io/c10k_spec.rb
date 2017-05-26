@@ -26,12 +26,24 @@ RSpec.describe "echo client/server" do
 	
 	let(:server_address) {Async::IO::Address.new([:tcp, '0.0.0.0', 9000])}
 	
+	let(:repeats) {10000}
+	
 	def echo_server(server_address)
 		Async::Reactor.run do |task|
+			connection_count = task.async do
+				while task.children.count < repeats
+					puts "#{task.children.count}/#{repeats} simultaneous connections."
+					task.sleep(1)
+				end
+			end
+			
 			# This is a synchronous block within the current task:
 			Async::IO::Socket.accept(server_address) do |client|
 				# This is an asynchronous block within the current reactor:
 				data = client.read(512)
+				
+				# Wait until we've got all the connections:
+				connection_count.wait
 				
 				client.write(data)
 			end
@@ -49,8 +61,6 @@ RSpec.describe "echo client/server" do
 			end
 		end
 	end
-	
-	let(:repeats) {10000}
 	
 	around(:each) do |example|
 		duration = Benchmark.realtime do
@@ -82,7 +92,7 @@ RSpec.describe "echo client/server" do
 			# puts "Starting client #{i} on #{task}..."
 			
 			# TODO Fix this rate limiting workaround.
-			task.sleep(0.000001) while task.children.count > Socket::SOMAXCONN
+			task.sleep(0.000001)
 			
 			echo_client(server_address, "Hello World #{i}", responses)
 		end
