@@ -60,7 +60,7 @@ RSpec.describe "echo client/server" do
 		example.reporter.message "Handled #{repeats} connections in #{duration}: #{repeats/duration}req/s"
 	end
 	
-	it "should echo several messages" do
+	it "should send/receive 10,000 messages" do
 		server = echo_server(server_address)
 		responses = []
 		
