@@ -26,11 +26,13 @@ module Async
 		class Stream
 			include Enumerable
 			
-			def initialize(io, block_size: 1024)
+			def initialize(io, block_size: 1024, eol: $/)
 				@io = io
 				@eof = false
-				@sync = true
+				@sync = false
+				
 				@block_size = block_size
+				@eol = eol
 				
 				@read_buffer = String.new
 				@write_buffer = String.new
@@ -40,6 +42,8 @@ module Async
 					@write_buffer.force_encoding(encoding)
 				end
 			end
+			
+			attr :io
 			
 			# The "sync mode" of the stream
 			#
@@ -127,7 +131,7 @@ module Async
 				ret
 			end
 
-			# Reads the next line from the stream.  Lines are separated by +eol+.  If
+			# Reads the next line from the stream. Lines are separated by +eol+. If
 			# +limit+ is provided the result will not be longer than the given number of
 			# bytes.
 			#
@@ -136,9 +140,9 @@ module Async
 			# Unlike IO#gets the line read will not be assigned to +$_+.
 			#
 			# Unlike IO#gets the separator must be provided if a limit is provided.
-			def gets(eol=$/, limit=nil)
+			def gets(eol=@eol, limit=nil)
 				idx = @read_buffer.index(eol)
-
+				
 				until @eof
 					break if idx
 					fill_rbuff
@@ -162,7 +166,7 @@ module Async
 			# by +eol+.
 			#
 			# See also #gets
-			def each(eol=$/)
+			def each(eol = @eol)
 				while line = self.gets(eol)
 					yield line
 				end
@@ -172,22 +176,21 @@ module Async
 			# Reads lines from the stream which are separated by +eol+.
 			#
 			# See also #gets
-			def readlines(eol=$/)
-				ary = []
+			def readlines(eol = @eol)
+				lines = []
 
 				while line = self.gets(eol)
-					ary << line
+					lines << line
 				end
 
-				ary
+				lines
 			end
 
 			# Reads a line from the stream which is separated by +eol+.
 			#
 			# Raises EOFError if at end of file.
-			def readline(eol=$/)
-				raise EOFError if eof?
-				gets(eol)
+			def readline(eol=@eol)
+				gets(eol) or raise EOFError
 			end
 
 			# Reads one character from the stream.  Returns nil if called at end of
@@ -206,8 +209,7 @@ module Async
 			# Reads a one-character string from the stream.  Raises an EOFError at end
 			# of file.
 			def readchar
-				raise EOFError if eof?
-				getc
+				getc or raise EOFError
 			end
 
 			# Pushes character +c+ back onto the stream such that a subsequent buffered
@@ -224,52 +226,58 @@ module Async
 			# be read.
 			def eof?
 				fill_rbuff if !@eof && @read_buffer.empty?
+				
 				@eof && @read_buffer.empty?
 			end
 			alias eof eof?
 
 			# Writes +s+ to the stream.  If the argument is not a string it will be
 			# converted using String#to_s.  Returns the number of bytes written.
-			def write(s)
-				do_write(s)
-				s.bytesize
+			def write(object)
+				string = object.to_s
+				
+				append_wbuff(string)
+				
+				return string.bytesize
 			end
 
-			# Writes +s+ to the stream.  +s+ will be converted to a String using
-			# String#to_s.
-			def << (s)
-				do_write(s)
-				self
+			# Writes +s+ to the stream.
+			def <<(string)
+				append_wbuff(string)
+				
+				return self
 			end
 
 			# Writes +args+ to the stream along with a record separator.
 			#
 			# See IO#puts for full details.
-			def puts(*args)
-				s = ""
+			def puts(*args, eol: @eol)
 				if args.empty?
-					s << "\n"
-				end
-
-				args.each do |arg|
-					s << arg.to_s
-					if $/ && /\n\z/ !~ s
-						s << "\n"
+					append_wbuff(eol)
+				else
+					args.each do |arg|
+						string = arg.to_s
+						if string.end_with? eol
+							append_wbuff(string)
+						else
+							append_wbuff(string)
+							append_wbuff(eol)
+						end
 					end
 				end
-
-				do_write(s)
-				nil
+				
+				return nil
 			end
 
 			# Writes +args+ to the stream.
 			#
 			# See IO#print for full details.
 			def print(*args)
-				s = ""
-				args.each { |arg| s << arg.to_s }
-				do_write(s)
-				nil
+				args.each do |arg|
+					append_wbuff(arg.to_s)
+				end
+				
+				return nil
 			end
 
 			# Formats and writes to the stream converting parameters under control of
@@ -277,18 +285,24 @@ module Async
 			#
 			# See Kernel#sprintf for format string details.
 			def printf(s, *args)
-				do_write(s % args)
-				nil
+				append_wbuff(s % args)
+				
+				return nil
 			end
 
 			# Flushes buffered data to the stream.
 			def flush
-				osync = @sync
-				@sync = true
-				do_write ""
-				return self
-			ensure
-				@sync = osync
+				remaining = @write_buffer.length
+				written = 0
+				
+				while remaining > 0
+					wrote = @io.write(@write_buffer[written, remaining])
+					
+					remaining -= wrote
+					written += wrote
+				end
+
+				@write_buffer[0, written] = ""
 			end
 
 			# Closes the stream and flushes any unwritten data.
@@ -302,42 +316,45 @@ module Async
 
 			# Fills the buffer from the underlying stream
 			def fill_rbuff
-				if @io.read(@block_size, @read_buffer).nil?
+				if buffer = @io.read(@block_size)
+					@read_buffer << buffer
+				else
 					@eof = true
 				end
 			end
 
-			# Consumes +size+ bytes from the buffer
-			def consume_rbuff(size=nil)
-				if @read_buffer.empty?
-					nil
+			# Consumes +size+ bytes from the buffer.
+			def consume_rbuff(size = nil)
+				# If we are at eof, and the read buffer is empty, we can't consume anything.
+				return nil if @eof && @read_buffer.empty?
+				
+				result = nil
+				
+				if size == nil || size == @read_buffer.size
+					# Consume the entire read buffer:
+					result = @read_buffer.dup
+					@read_buffer.clear
 				else
-					size = @read_buffer.size unless size
-					ret = @read_buffer[0, size]
+					# Consume only part of the read buffer:
+					result = @read_buffer[0, size]
 					@read_buffer[0, size] = ""
-					ret
 				end
+				
+				return result
 			end
 
-			# Writes +s+ to the buffer.  When the buffer is full or #sync is true the
-			# buffer is flushed to the underlying stream.
-			def do_write(s)
-				@write_buffer << s
-				@write_buffer.force_encoding(Encoding::BINARY)
-
-				if @sync or @write_buffer.size > @block_size or idx = @write_buffer.rindex($/)
-					remain = idx ? idx + $/.size : @write_buffer.length
-					nwritten = 0
-
-					while remain > 0
-						nwrote = @io.write(@write_buffer[nwritten,remain])
-						
-						remain -= nwrote
-						nwritten += nwrote
-					end
-
-					@write_buffer[0,nwritten] = ""
+			# Writes `string` to the buffer. When the buffer is full or #sync is true the
+			# buffer is flushed to the underlying `io`.
+			# @param string the string to write to the buffer.
+			# @return the number of bytes appended to the buffer.
+			def append_wbuff(string)
+				@write_buffer << string
+				
+				if @sync || @write_buffer.bytesize > @block_size
+					flush
 				end
+				
+				return string.bytesize
 			end
 		end
 	end

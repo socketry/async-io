@@ -26,6 +26,7 @@ RSpec.describe Async::IO::Stream do
 	
 	it "should read lines" do
 		io << "Hello\nWorld\n"
+		
 		io.seek(0)
 		
 		expect(stream.readlines).to be == ["Hello\n", "World\n"]

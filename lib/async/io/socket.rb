@@ -120,13 +120,15 @@ module Async
 			# @example
 			#  socket = Async::IO::Socket.bind(Async::IO::Address.tcp("0.0.0.0", 9090))
 			# @param local_address [Address] The local address to bind to.
-			# @option protcol [Integer] The socket protocol to use.
-			def self.bind(local_address, protocol: 0, task: Task.current, &block)
+			# @option protocol [Integer] The socket protocol to use.
+			# @option reuse_port [Boolean] Allow this port to be bound in multiple processes.
+			def self.bind(local_address, protocol: 0, reuse_port: false, task: Task.current, &block)
 				task.annotate "binding to #{local_address.inspect}"
 				
 				socket = ::Socket.new(local_address.afamily, local_address.socktype, protocol)
 				
 				socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
+				socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
 				socket.bind(local_address.to_sockaddr)
 				
 				wrapper = self.new(socket, task.reactor)
