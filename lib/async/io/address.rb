@@ -42,7 +42,7 @@ module Async
 				def each(specifications, &block)
 					specifications.each do |specification|
 						if specification.is_a? self
-							yield self
+							yield specification
 						else
 							# Perhaps detect options here?
 							yield self.new(specification)
