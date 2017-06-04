@@ -23,6 +23,22 @@ require_relative 'generic'
 
 module Async
 	module IO
+		class BinaryString < String
+			def initialize(*args)
+				super
+				
+				force_encoding(Encoding::BINARY)
+			end
+			
+			def << string
+				super
+				
+				force_encoding(Encoding::BINARY)
+			end
+			
+			alias concat <<
+		end
+		
 		class Stream
 			include Enumerable
 			
@@ -34,31 +50,24 @@ module Async
 				@block_size = block_size
 				@eol = eol
 				
-				@read_buffer = String.new
-				@write_buffer = String.new
-				
-				if encoding = io.internal_encoding
-					@read_buffer.force_encoding(encoding)
-					@write_buffer.force_encoding(encoding)
-				end
+				@read_buffer = BinaryString.new
+				@write_buffer = BinaryString.new
 			end
 			
 			attr :io
 			
-			# The "sync mode" of the stream
-			#
-			# See IO#sync for full details.
+			# The "sync mode" of the stream. See IO#sync for full details.
 			attr_accessor :sync
 			
-			# Reads +size+ bytes from the stream.  If +buf+ is provided it must
+			# Reads `size` bytes from the stream.  If `buffer` is provided it must
 			# reference a string which will receive the data.
 			#
 			# See IO#read for full details.
-			def read(size=nil, buf=nil)
+			def read(size = nil, output_buffer = nil)
 				if size == 0
-					if buf
-						buf.clear
-						return buf
+					if output_buffer
+						output_buffer.clear
+						return output_buffer
 					else
 						return ""
 					end
@@ -66,69 +75,48 @@ module Async
 
 				until @eof
 					break if size && size <= @read_buffer.size
-					fill_rbuff
+					fill_read_buffer
 					break unless size
 				end
 
-				ret = consume_rbuff(size) || ""
+				buffer = consume_read_buffer(size)
 
-				if buf
-					buf.replace(ret)
-					ret = buf
+				if buffer && output_buffer
+					output_buffer.replace(buffer)
+					buffer = output_buffer
 				end
 
-				(size && ret.empty?) ? nil : ret
+				if size
+					return buffer
+				else
+					return buffer || ""
+				end
 			end
 
-			# System write via the nonblocking subsystem
-			def write(buffer)
-				length = string.length
-				total_written = 0
-
-				remaining = buffer.dup
-
-				while total_written < length
-					written = @io.write(remaining)
-					total_written += written
-					
-					# TODO ugly
-					remaining.slice!(0, written) if written < remaining.length
+			# Writes `string` to the buffer. When the buffer is full or #sync is true the
+			# buffer is flushed to the underlying `io`.
+			# @param string the string to write to the buffer.
+			# @return the number of bytes appended to the buffer.
+			def write(string)
+				@write_buffer << string
+				
+				if @sync || @write_buffer.size > @block_size
+					flush
 				end
-
-				total_written
+				
+				return string.bytesize
 			end
 
-			# Reads at most +maxlen+ bytes from the stream.  If +buf+ is provided it
-			# must reference a string which will receive the data.
-			#
-			# See IO#readpartial for full details.
-			def readpartial(maxlen, buf=nil)
-				if maxlen == 0
-					if buf
-						buf.clear
-						return buf
-					else
-						return ""
-					end
-				end
+			# Flushes buffered data to the stream.
+			def flush
+				syswrite(@write_buffer)
+			end
 
-				if @read_buffer.empty?
-					begin
-						return sysread(maxlen, buf)
-					rescue Errno::EAGAIN
-						retry
-					end
-				end
-
-				ret = consume_rbuff(maxlen)
-
-				if buf
-					buf.replace(ret)
-					ret = buf
-				end
-
-				raise EOFError if ret.empty?
-				ret
+			# Closes the stream and flushes any unwritten data.
+			def close
+				flush rescue nil
+				
+				@io.close
 			end
 
 			# Reads the next line from the stream. Lines are separated by +eol+. If
@@ -140,26 +128,25 @@ module Async
 			# Unlike IO#gets the line read will not be assigned to +$_+.
 			#
 			# Unlike IO#gets the separator must be provided if a limit is provided.
-			def gets(eol=@eol, limit=nil)
-				idx = @read_buffer.index(eol)
+			def gets(eol = @eol, limit = nil)
+				index = @read_buffer.index(eol)
 				
-				until @eof
-					break if idx
-					fill_rbuff
-					idx = @read_buffer.index(eol)
+				until index || @eof
+					fill_read_buffer
+					index = @read_buffer.index(eol)
 				end
 
 				if eol.is_a?(Regexp)
-					size = idx ? idx+$&.size : nil
+					size = index ? index+$&.bytesize : nil
 				else
-					size = idx ? idx+eol.size : nil
+					size = index ? index+eol.bytesize : nil
 				end
 
-				if limit and limit >= 0
+				if limit && limit >= 0
 					size = [size, limit].min
 				end
 
-				consume_rbuff(size)
+				consume_read_buffer(size)
 			end
 
 			# Executes the block for every line in the stream where lines are separated
@@ -212,56 +199,33 @@ module Async
 				getc or raise EOFError
 			end
 
-			# Pushes character +c+ back onto the stream such that a subsequent buffered
-			# character read will return it.
-			#
-			# Unlike IO#getc multiple bytes may be pushed back onto the stream.
-			#
-			# Has no effect on unbuffered reads (such as #sysread).
-			def ungetc(c)
-				@read_buffer[0,0] = c.chr
-			end
-
-			# Returns true if the stream is at file which means there is no more data to
-			# be read.
+			# Returns true if the stream is at file which means there is no more data to be read.
 			def eof?
-				fill_rbuff if !@eof && @read_buffer.empty?
+				fill_read_buffer if !@eof && @read_buffer.empty?
 				
 				@eof && @read_buffer.empty?
 			end
 			alias eof eof?
 
-			# Writes +s+ to the stream.  If the argument is not a string it will be
-			# converted using String#to_s.  Returns the number of bytes written.
-			def write(object)
-				string = object.to_s
-				
-				append_wbuff(string)
-				
-				return string.bytesize
-			end
-
-			# Writes +s+ to the stream.
+			# Writes `string` to the stream.
 			def <<(string)
-				append_wbuff(string)
+				write(string)
 				
 				return self
 			end
 
-			# Writes +args+ to the stream along with a record separator.
-			#
-			# See IO#puts for full details.
+			# Writes `args` to the stream along with a record separator. See `IO#puts` for full details.
 			def puts(*args, eol: @eol)
 				if args.empty?
-					append_wbuff(eol)
+					write(eol)
 				else
 					args.each do |arg|
 						string = arg.to_s
 						if string.end_with? eol
-							append_wbuff(string)
+							write(string)
 						else
-							append_wbuff(string)
-							append_wbuff(eol)
+							write(string)
+							write(eol)
 						end
 					end
 				end
@@ -269,62 +233,59 @@ module Async
 				return nil
 			end
 
-			# Writes +args+ to the stream.
-			#
-			# See IO#print for full details.
+			# Writes `args` to the stream. See `IO#print` for full details.
 			def print(*args)
 				args.each do |arg|
-					append_wbuff(arg.to_s)
+					write(arg.to_s)
 				end
 				
 				return nil
 			end
 
-			# Formats and writes to the stream converting parameters under control of
-			# the format string.
-			#
-			# See Kernel#sprintf for format string details.
+			# Formats and writes to the stream converting parameters under control of the format string. See `Kernel#sprintf` for format string details.
 			def printf(s, *args)
-				append_wbuff(s % args)
+				write(s % args)
 				
 				return nil
 			end
 
-			# Flushes buffered data to the stream.
-			def flush
-				remaining = @write_buffer.length
-				written = 0
+			private
+			
+			# Write a buffer to the underlying stream.
+			# @param buffer [String] The string to write, any encoding is okay.
+			def syswrite(buffer)
+				remaining = buffer.bytesize
+				
+				# Fast path:
+				written = @io.write(buffer)
+				return if written == remaining
+				
+				# Slow path:
+				remaining -= written
 				
 				while remaining > 0
-					wrote = @io.write(@write_buffer[written, remaining])
+					wrote = @io.write(buffer.byteslice(written, remaining))
 					
 					remaining -= wrote
 					written += wrote
 				end
-
-				@write_buffer[0, written] = ""
-			end
-
-			# Closes the stream and flushes any unwritten data.
-			def close
-				flush rescue nil
 				
-				@io.close
+				return written
 			end
 
-			private
-
-			# Fills the buffer from the underlying stream
-			def fill_rbuff
+			# Fills the buffer from the underlying stream.
+			def fill_read_buffer
 				if buffer = @io.read(@block_size)
+					# We guarantee that the read_buffer remains ASCII-8BIT because read should always return ASCII-8BIT 
 					@read_buffer << buffer
 				else
 					@eof = true
 				end
 			end
 
-			# Consumes +size+ bytes from the buffer.
-			def consume_rbuff(size = nil)
+			# Consumes `size` bytes from the buffer.
+			# @param size [Integer|nil] The amount of data to consume. If nil, consume entire buffer.
+			def consume_read_buffer(size = nil)
 				# If we are at eof, and the read buffer is empty, we can't consume anything.
 				return nil if @eof && @read_buffer.empty?
 				
@@ -336,25 +297,10 @@ module Async
 					@read_buffer.clear
 				else
 					# Consume only part of the read buffer:
-					result = @read_buffer[0, size]
-					@read_buffer[0, size] = ""
+					result = @read_buffer.slice!(0, size)
 				end
 				
 				return result
-			end
-
-			# Writes `string` to the buffer. When the buffer is full or #sync is true the
-			# buffer is flushed to the underlying `io`.
-			# @param string the string to write to the buffer.
-			# @return the number of bytes appended to the buffer.
-			def append_wbuff(string)
-				@write_buffer << string
-				
-				if @sync || @write_buffer.bytesize > @block_size
-					flush
-				end
-				
-				return string.bytesize
 			end
 		end
 	end

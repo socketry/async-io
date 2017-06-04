@@ -22,13 +22,44 @@ require 'async/io/stream'
 
 RSpec.describe Async::IO::Stream do
 	let(:io) {StringIO.new}
-	let(:stream) {Async::IO::Stream.new(io)}
+	let(:stream) {Async::IO::Stream.new(io, eol: "\n")}
 	
-	it "should read lines" do
-		io << "Hello\nWorld\n"
+	describe '#puts' do
+		it "should write line" do
+			stream.puts "Hello World"
+			stream.flush
+			
+			expect(io.string).to be == "Hello World\n"
+		end
+	end
+	
+	describe '#readline' do
+		before(:each) do
+			io.puts "Hello World"
+			io.seek(0)
+		end
 		
-		io.seek(0)
+		it "should read one line" do
+			expect(stream.readline).to be == "Hello World\n"
+		end
 		
-		expect(stream.readlines).to be == ["Hello\n", "World\n"]
+		it "should be binary encoding" do
+			expect(stream.readline.encoding).to be == Encoding::BINARY
+		end
+	end
+	
+	describe '#readlines' do
+		before(:each) do
+			io << "Hello\nWorld\n"
+			io.seek(0)
+		end
+		
+		it "should read multiple lines" do
+			expect(stream.readlines).to be == ["Hello\n", "World\n"]
+		end
+		
+		it "should be binary encoding" do
+			expect(stream.readlines.first.encoding).to be == Encoding::BINARY
+		end
 	end
 end
