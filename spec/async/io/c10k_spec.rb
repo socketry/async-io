@@ -22,29 +22,37 @@ require 'async/io'
 require 'benchmark'
 
 RSpec.describe "echo client/server" do
-	include_context Async::RSpec::Reactor
-	
-	let(:server_address) {Async::IO::Address.new([:tcp, '0.0.0.0', 9000])}
-	
 	let(:repeats) {10000}
+	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 9000)}
 	
 	def echo_server(server_address)
 		Async::Reactor.run do |task|
-			connection_count = task.async do
-				while task.children.count < repeats
-					puts "#{task.children.count}/#{repeats} simultaneous connections."
-					task.sleep(1)
+			connection_count = 0
+			
+			connections_complete = task.async do
+				last_count = 0
+				
+				while connection_count < repeats
+					if connection_count != last_count
+						puts "#{connection_count}/#{repeats} simultaneous connections."
+						last_count = connection_count
+					end
+					
+					task.sleep(1.0)
 				end
+				
+				puts "Releasing all connections..."
 			end
 			
 			# This is a synchronous block within the current task:
 			Async::IO::Socket.accept(server_address) do |client|
-				# This is an asynchronous block within the current reactor:
-				data = client.read(512)
+				connection_count += 1
 				
 				# Wait until we've got all the connections:
-				connection_count.wait
+				connections_complete.wait
 				
+				# This is an asynchronous block within the current reactor:
+				data = client.read(512)
 				client.write(data)
 			end
 		end
@@ -52,14 +60,31 @@ RSpec.describe "echo client/server" do
 	
 	def echo_client(server_address, data, responses)
 		Async::Reactor.run do |task|
-			Async::IO::Socket.connect(server_address) do |peer|
-				result = peer.write(data)
-				
-				message = peer.read(512)
-				
-				responses << message
+			begin
+				Async::IO::Socket.connect(server_address) do |peer|
+					result = peer.write(data)
+					
+					message = peer.read(512)
+					
+					responses << message
+				end
+			rescue Errno::ECONNREFUSED
+				puts "Connection refused..."
+				# If the connection was refused, it means the server probably can't accept connections any faster than it currently is, so we simply retry.
+				retry
 			end
 		end
+	end
+	
+	def fork_server
+		pid = fork do
+			echo_server(server_address)
+		end
+		
+		yield
+	ensure
+		Process.kill(:KILL, pid)
+		Process.wait(pid)
 	end
 	
 	around(:each) do |example|
@@ -83,25 +108,22 @@ RSpec.describe "echo client/server" do
 	end
 	
 	it "should send/receive 10,000 messages" do
-		server = echo_server(server_address)
-		responses = []
-		
-		task = Async::Task.current
-		
-		tasks = repeats.times.collect do |i|
-			# puts "Starting client #{i} on #{task}..."
-			
-			# TODO Fix this rate limiting workaround.
-			task.sleep(0.000001)
-			
-			echo_client(server_address, "Hello World #{i}", responses)
+		fork_server do
+			Async::Reactor.run do |task|
+				responses = []
+				
+				tasks = repeats.times.collect do |i|
+					# puts "Starting client #{i} on #{task}..." if (i % 1000) == 0
+					
+					echo_client(server_address, "Hello World #{i}", responses)
+				end
+				
+				# task.reactor.print_hierarchy
+				
+				tasks.each(&:wait)
+				
+				expect(responses.count).to be repeats
+			end
 		end
-		
-		# task.reactor.print_hierarchy
-		
-		tasks.each(&:wait)
-		server.stop
-		
-		expect(responses.count).to be repeats
 	end
 end
