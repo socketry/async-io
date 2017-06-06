@@ -207,7 +207,7 @@ module Async
 			end
 			alias eof eof?
 
-			# Writes `string` to the stream.
+			# Writes `string` to the stream and returns self.
 			def <<(string)
 				write(string)
 				
