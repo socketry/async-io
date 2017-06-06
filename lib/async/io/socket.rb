@@ -84,6 +84,18 @@ module Async
 				end
 			end
 			
+			def self.build(*args, task: Task.current)
+				socket = ::Socket.new(*args)
+				
+				yield socket
+				
+				return self.new(socket, task.reactor)
+			rescue Exception
+				socket.close if socket
+				
+				raise
+			end
+			
 			# Establish a connection to a given `remote_address`.
 			# @example
 			#  socket = Async::IO::Socket.connect(Async::IO::Address.tcp("8.8.8.8", 53))
@@ -93,21 +105,26 @@ module Async
 			def self.connect(remote_address, local_address = nil, protocol: 0, task: Task.current)
 				task.annotate "connecting to #{remote_address.inspect}"
 				
-				socket = ::Socket.new(remote_address.afamily, remote_address.socktype, protocol)
-				
-				if local_address
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
-					socket.bind(local_address.to_sockaddr) if local_address
+				wrapper = build(remote_address.afamily, remote_address.socktype, protocol) do |socket|
+					if local_address
+						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
+						socket.bind(local_address.to_sockaddr) if local_address
+					end
+					
+					self.new(socket, task.reactor)
 				end
 				
-				wrapper = self.new(socket, task.reactor)
-				wrapper.connect(remote_address.to_sockaddr)
-				
-				task.annotate "connected to #{remote_address.inspect}"
+				begin
+					wrapper.connect(remote_address.to_sockaddr)
+					task.annotate "connected to #{remote_address.inspect}"
+				rescue
+					wrapper.close
+					raise
+				end
 				
 				if block_given?
 					begin
-						return yield(wrapper)
+						yield wrapper, task
 					ensure
 						wrapper.close
 					end
@@ -125,17 +142,15 @@ module Async
 			def self.bind(local_address, protocol: 0, reuse_port: false, task: Task.current, &block)
 				task.annotate "binding to #{local_address.inspect}"
 				
-				socket = ::Socket.new(local_address.afamily, local_address.socktype, protocol)
-				
-				socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
-				socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
-				socket.bind(local_address.to_sockaddr)
-				
-				wrapper = self.new(socket, task.reactor)
+				wrapper = build(local_address.afamily, local_address.socktype, protocol) do |socket|
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
+					socket.bind(local_address.to_sockaddr)
+				end
 				
 				if block_given?
 					begin
-						return yield(wrapper, task)
+						yield wrapper, task
 					ensure
 						wrapper.close
 					end
