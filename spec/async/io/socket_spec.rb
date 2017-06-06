@@ -26,10 +26,20 @@ RSpec.describe Async::IO::Socket do
 	describe '#connect' do
 		let(:address) {Async::IO::Address.tcp('127.0.0.1', 12345)}
 		
-		it "should fail to connect" do
+		it "should fail to connect if no listening server" do
 			expect do
 				Async::IO::Socket.connect(address)
 			end.to raise_error(Errno::ECONNREFUSED)
+		end
+	end
+	
+	describe '#bind' do
+		let(:address) {Async::IO::Address.tcp('127.0.0.1', 1)}
+		
+		it "should fail to bind to port < 1024" do
+			expect do
+				Async::IO::Socket.bind(address)
+			end.to raise_error(Errno::EACCES)
 		end
 	end
 end
