@@ -18,48 +18,56 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/io/stream'
+require_relative 'stream'
 
-RSpec.describe Async::IO::Stream do
-	let(:io) {StringIO.new}
-	let(:stream) {Async::IO::Stream.new(io, eol: "\n")}
-	
-	describe '#puts' do
-		it "should write line" do
-			stream.puts "Hello World"
-			stream.flush
+module Async
+	module IO
+		class LineStream < Stream
+			include Enumerable
 			
-			expect(io.string).to be == "Hello World\n"
-		end
-	end
-	
-	describe '#readline' do
-		before(:each) do
-			io.puts "Hello World"
-			io.seek(0)
-		end
-		
-		it "should read one line" do
-			expect(stream.readline).to be == "Hello World\n"
-		end
-		
-		it "should be binary encoding" do
-			expect(stream.readline.encoding).to be == Encoding::BINARY
-		end
-	end
-	
-	describe '#readlines' do
-		before(:each) do
-			io << "Hello\nWorld\n"
-			io.seek(0)
-		end
-		
-		it "should read multiple lines" do
-			expect(stream.readlines).to be == ["Hello\n", "World\n"]
-		end
-		
-		it "should be binary encoding" do
-			expect(stream.readlines.first.encoding).to be == Encoding::BINARY
+			def initialize(*args, eol: $\, **options)
+				super(*args, **options)
+				
+				@eol = eol
+			end
+			
+			def puts(*args)
+				if args.empty?
+					@io.write(@eol)
+				else
+					args.each do |arg|
+						@io.write(arg)
+						@io.write(@eol)
+					end
+				end
+			end
+			
+			def gets
+				index = @read_buffer.index(@eol)
+				
+				until index || @eof
+					fill_read_buffer
+					index = @read_buffer.index(@eol)
+				end
+				
+				if line = consume_read_buffer(index)
+					consume_read_buffer(@eol.bytesize)
+					
+					return line
+				end
+			end
+			
+			alias readline gets
+			
+			def each
+				return to_enum unless block_given?
+				
+				while line = self.gets
+					yield line
+				end
+			end
+			
+			alias readlines to_a
 		end
 	end
 end

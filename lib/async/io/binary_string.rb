@@ -20,6 +20,20 @@
 
 module Async
 	module IO
-		VERSION = "0.4.0"
+		class BinaryString < String
+			def initialize(*args)
+				super
+				
+				force_encoding(Encoding::BINARY)
+			end
+			
+			def << string
+				super
+				
+				force_encoding(Encoding::BINARY)
+			end
+			
+			alias concat <<
+		end
 	end
 end

@@ -18,37 +18,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'socket'
+require_relative 'binary_string'
 require_relative 'generic'
 
 module Async
 	module IO
-		class BinaryString < String
-			def initialize(*args)
-				super
-				
-				force_encoding(Encoding::BINARY)
-			end
-			
-			def << string
-				super
-				
-				force_encoding(Encoding::BINARY)
-			end
-			
-			alias concat <<
-		end
-		
 		class Stream
-			include Enumerable
-			
-			def initialize(io, block_size: 1024, eol: $/)
+			def initialize(io, block_size: 1024*4, sync: false)
 				@io = io
 				@eof = false
-				@sync = false
 				
 				@block_size = block_size
-				@eol = eol
+				@sync = sync
 				
 				@read_buffer = BinaryString.new
 				@write_buffer = BinaryString.new
@@ -63,16 +44,9 @@ module Async
 			# reference a string which will receive the data.
 			#
 			# See IO#read for full details.
-			def read(size = nil, output_buffer = nil)
-				if size == 0
-					if output_buffer
-						output_buffer.clear
-						return output_buffer
-					else
-						return ""
-					end
-				end
-
+			def read(size = nil)
+				return "" if size == 0
+				
 				until @eof
 					break if size && size <= @read_buffer.size
 					fill_read_buffer
@@ -80,11 +54,6 @@ module Async
 				end
 
 				buffer = consume_read_buffer(size)
-
-				if buffer && output_buffer
-					output_buffer.replace(buffer)
-					buffer = output_buffer
-				end
 
 				if size
 					return buffer
@@ -107,9 +76,17 @@ module Async
 				return string.bytesize
 			end
 
+			# Writes `string` to the stream and returns self.
+			def <<(string)
+				write(string)
+				
+				return self
+			end
+
 			# Flushes buffered data to the stream.
 			def flush
 				syswrite(@write_buffer)
+				@write_buffer.clear
 			end
 
 			# Closes the stream and flushes any unwritten data.
@@ -119,137 +96,16 @@ module Async
 				@io.close
 			end
 
-			# Reads the next line from the stream. Lines are separated by +eol+. If
-			# +limit+ is provided the result will not be longer than the given number of
-			# bytes.
-			#
-			# +eol+ may be a String or Regexp.
-			#
-			# Unlike IO#gets the line read will not be assigned to +$_+.
-			#
-			# Unlike IO#gets the separator must be provided if a limit is provided.
-			def gets(eol = @eol, limit = nil)
-				index = @read_buffer.index(eol)
-				
-				until index || @eof
-					fill_read_buffer
-					index = @read_buffer.index(eol)
-				end
-
-				if eol.is_a?(Regexp)
-					size = index ? index+$&.bytesize : nil
-				else
-					size = index ? index+eol.bytesize : nil
-				end
-
-				if limit && limit >= 0
-					size = [size, limit].min
-				end
-
-				consume_read_buffer(size)
-			end
-
-			# Executes the block for every line in the stream where lines are separated
-			# by +eol+.
-			#
-			# See also #gets
-			def each(eol = @eol)
-				while line = self.gets(eol)
-					yield line
-				end
-			end
-			alias each_line each
-
-			# Reads lines from the stream which are separated by +eol+.
-			#
-			# See also #gets
-			def readlines(eol = @eol)
-				lines = []
-
-				while line = self.gets(eol)
-					lines << line
-				end
-
-				lines
-			end
-
-			# Reads a line from the stream which is separated by +eol+.
-			#
-			# Raises EOFError if at end of file.
-			def readline(eol=@eol)
-				gets(eol) or raise EOFError
-			end
-
-			# Reads one character from the stream.  Returns nil if called at end of
-			# file.
-			def getc
-				read(1)
-			end
-
-			# Calls the given block once for each byte in the stream.
-			def each_byte # :yields: byte
-				while c = getc
-					yield(c.ord)
-				end
-			end
-
-			# Reads a one-character string from the stream.  Raises an EOFError at end
-			# of file.
-			def readchar
-				getc or raise EOFError
-			end
-
 			# Returns true if the stream is at file which means there is no more data to be read.
 			def eof?
 				fill_read_buffer if !@eof && @read_buffer.empty?
 				
-				@eof && @read_buffer.empty?
+				return @eof && @read_buffer.empty?
 			end
+			
 			alias eof eof?
-
-			# Writes `string` to the stream and returns self.
-			def <<(string)
-				write(string)
-				
-				return self
-			end
-
-			# Writes `args` to the stream along with a record separator. See `IO#puts` for full details.
-			def puts(*args, eol: @eol)
-				if args.empty?
-					write(eol)
-				else
-					args.each do |arg|
-						string = arg.to_s
-						if string.end_with? eol
-							write(string)
-						else
-							write(string)
-							write(eol)
-						end
-					end
-				end
-				
-				return nil
-			end
-
-			# Writes `args` to the stream. See `IO#print` for full details.
-			def print(*args)
-				args.each do |arg|
-					write(arg.to_s)
-				end
-				
-				return nil
-			end
-
-			# Formats and writes to the stream converting parameters under control of the format string. See `Kernel#sprintf` for format string details.
-			def printf(s, *args)
-				write(s % args)
-				
-				return nil
-			end
-
-			private
+			
+			protected
 			
 			# Write a buffer to the underlying stream.
 			# @param buffer [String] The string to write, any encoding is okay.
@@ -301,6 +157,54 @@ module Async
 				end
 				
 				return result
+			end
+		end
+		
+		class LineStream < Stream
+			def initialize(*args, eol: $\)
+				super(*args)
+				
+				@eol = eol
+			end
+			
+			def puts(*args)
+				if args.empty?
+					@io.write(@eol)
+				else
+					args.each do |arg|
+						@io.write(arg)
+						@io.write(@eol)
+					end
+				end
+			end
+			
+			def gets
+				index = @read_buffer.index(@eol)
+				
+				until index || @eof
+					fill_read_buffer
+					index = @read_buffer.index(@eol)
+				end
+				
+				if line = consume_read_buffer(index)
+					consume_read_buffer(@eol.bytesize)
+					
+					return line
+				end
+			end
+			
+			alias readline gets
+			
+			def each
+				return to_enum unless block_given?
+				
+				while line = self.gets
+					yield line
+				end
+			end
+			
+			def readlines
+				each.to_a
 			end
 		end
 	end
