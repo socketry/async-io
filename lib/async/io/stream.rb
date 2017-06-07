@@ -40,17 +40,12 @@ module Async
 			# The "sync mode" of the stream. See IO#sync for full details.
 			attr_accessor :sync
 			
-			# Reads `size` bytes from the stream.  If `buffer` is provided it must
-			# reference a string which will receive the data.
-			#
-			# See IO#read for full details.
+			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 			def read(size = nil)
 				return "" if size == 0
 				
-				until @eof
-					break if size && size <= @read_buffer.size
+				until @eof || (size && size <= @read_buffer.size)
 					fill_read_buffer
-					break unless size
 				end
 
 				return consume_read_buffer(size)
