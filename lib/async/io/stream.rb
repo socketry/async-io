@@ -53,13 +53,7 @@ module Async
 					break unless size
 				end
 
-				buffer = consume_read_buffer(size)
-
-				if size
-					return buffer
-				else
-					return buffer || ""
-				end
+				return consume_read_buffer(size)
 			end
 
 			# Writes `string` to the buffer. When the buffer is full or #sync is true the
