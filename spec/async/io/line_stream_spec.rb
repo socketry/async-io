@@ -18,48 +18,47 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/io/stream'
+require 'async/io/line_stream'
 
 RSpec.describe Async::IO::LineStream do
 	let(:io) {StringIO.new}
-	let(:stream) {Async::IO::LineStream.new(io, eol: "\n")}
+	let(:stream) {Async::IO::LineStream.new(Async::IO::Stream.new(io), eol: "\n")}
 	
 	describe '#puts' do
 		it "should write line" do
 			stream.puts "Hello World"
-			stream.flush
 			
 			expect(io.string).to be == "Hello World\n"
 		end
 	end
 	
-	describe '#readline' do
+	describe '#read_line' do
 		before(:each) do
 			io.puts "Hello World"
 			io.seek(0)
 		end
 		
 		it "should read one line" do
-			expect(stream.readline).to be == "Hello World"
+			expect(stream.read_line).to be == "Hello World"
 		end
 		
 		it "should be binary encoding" do
-			expect(stream.readline.encoding).to be == Encoding::BINARY
+			expect(stream.read_line.encoding).to be == Encoding::BINARY
 		end
 	end
 	
-	describe '#readlines' do
+	describe '#read_lines' do
 		before(:each) do
 			io << "Hello\nWorld\n"
 			io.seek(0)
 		end
 		
 		it "should read multiple lines" do
-			expect(stream.readlines).to be == ["Hello", "World"]
+			expect(stream.read_lines).to be == ["Hello", "World"]
 		end
 		
 		it "should be binary encoding" do
-			expect(stream.readlines.first.encoding).to be == Encoding::BINARY
+			expect(stream.read_lines.first.encoding).to be == Encoding::BINARY
 		end
 	end
 end

@@ -22,42 +22,40 @@ require_relative 'stream'
 
 module Async
 	module IO
-		class LineStream < Stream
-			include Enumerable
-			
-			def initialize(*args, eol: $\, **options)
-				super(*args, **options)
-				
+		class LineStream
+			def initialize(stream, eol: $\)
+				@stream = stream
 				@eol = eol
 			end
 			
-			def puts(*args)
+			attr :stream
+			attr :eol
+			
+			def flush
+				@stream.flush
+			end
+			
+			def write_lines(*args)
 				if args.empty?
-					@io.write(@eol)
+					@stream.write(@eol)
 				else
 					args.each do |arg|
-						@io.write(arg)
-						@io.write(@eol)
+						@stream.write(arg)
+						@stream.write(@eol)
 					end
 				end
 			end
 			
-			def gets
-				index = @read_buffer.index(@eol)
-				
-				until index || @eof
-					fill_read_buffer
-					index = @read_buffer.index(@eol)
-				end
-				
-				if line = consume_read_buffer(index)
-					consume_read_buffer(@eol.bytesize)
-					
-					return line
-				end
+			def puts(*args)
+				write_lines(*args)
+				flush
 			end
 			
-			alias readline gets
+			def read_line
+				@stream.read_until(@eol)
+			end
+			
+			alias gets read_line
 			
 			def each
 				return to_enum unless block_given?
@@ -67,7 +65,9 @@ module Async
 				end
 			end
 			
-			alias readlines to_a
+			def read_lines
+				@stream.read.split(@eol)
+			end
 		end
 	end
 end

@@ -94,30 +94,27 @@ module Async
 			
 			alias eof eof?
 			
-			protected
-			
-			# Write a buffer to the underlying stream.
-			# @param buffer [String] The string to write, any encoding is okay.
-			def syswrite(buffer)
-				remaining = buffer.bytesize
+			# Efficiently read data from the stream until encountering pattern.
+			# @param pattern [String] The pattern to match.
+			# @return [String] The contents of the stream up until the pattern, which is consumed but not returned.
+			def read_until(pattern)
+				index = @read_buffer.index(pattern)
 				
-				# Fast path:
-				written = @io.write(buffer)
-				return if written == remaining
-				
-				# Slow path:
-				remaining -= written
-				
-				while remaining > 0
-					wrote = @io.write(buffer.byteslice(written, remaining))
+				until index || @eof
+					fill_read_buffer
 					
-					remaining -= wrote
-					written += wrote
+					index = @read_buffer.index(pattern)
 				end
 				
-				return written
+				if line = consume_read_buffer(index)
+					consume_read_buffer(pattern.bytesize)
+					
+					return line
+				end
 			end
-
+			
+			private
+			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer
 				if buffer = @io.read(@block_size)
@@ -147,53 +144,27 @@ module Async
 				
 				return result
 			end
-		end
-		
-		class LineStream < Stream
-			def initialize(*args, eol: $\)
-				super(*args)
-				
-				@eol = eol
-			end
 			
-			def puts(*args)
-				if args.empty?
-					@io.write(@eol)
-				else
-					args.each do |arg|
-						@io.write(arg)
-						@io.write(@eol)
-					end
-				end
-			end
-			
-			def gets
-				index = @read_buffer.index(@eol)
+			# Write a buffer to the underlying stream.
+			# @param buffer [String] The string to write, any encoding is okay.
+			def syswrite(buffer)
+				remaining = buffer.bytesize
 				
-				until index || @eof
-					fill_read_buffer
-					index = @read_buffer.index(@eol)
-				end
+				# Fast path:
+				written = @io.write(buffer)
+				return if written == remaining
 				
-				if line = consume_read_buffer(index)
-					consume_read_buffer(@eol.bytesize)
+				# Slow path:
+				remaining -= written
+				
+				while remaining > 0
+					wrote = @io.write(buffer.byteslice(written, remaining))
 					
-					return line
+					remaining -= wrote
+					written += wrote
 				end
-			end
-			
-			alias readline gets
-			
-			def each
-				return to_enum unless block_given?
 				
-				while line = self.gets
-					yield line
-				end
-			end
-			
-			def readlines
-				each.to_a
+				return written
 			end
 		end
 	end
