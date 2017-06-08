@@ -43,13 +43,8 @@ module Async
 					end
 				end
 				
-				def puts(*args)
-					write_lines(*args)
-					@stream.flush
-				end
-				
 				def read_line
-					@stream.read_until(@eol)
+					@stream.read_until(@eol) or raise EOFError
 				end
 				
 				def peek_line
@@ -60,12 +55,10 @@ module Async
 					end
 				end
 				
-				alias gets read_line
-				
 				def each_line
 					return to_enum(:each_line) unless block_given?
 					
-					while line = self.gets
+					while line = @stream.read_until(@eol)
 						yield line
 					end
 				end

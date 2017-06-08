@@ -25,9 +25,10 @@ RSpec.describe Async::IO::Protocol::Line do
 	let(:stream) {Async::IO::Stream.new(io)}
 	let(:protocol) {described_class.new(stream, "\n")}
 	
-	describe '#puts' do
+	describe '#write_lines' do
 		it "should write line" do
-			protocol.puts "Hello World"
+			protocol.write_lines "Hello World"
+			stream.flush
 			
 			expect(io.string).to be == "Hello World\n"
 		end
