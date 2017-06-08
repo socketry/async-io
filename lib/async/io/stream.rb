@@ -113,6 +113,12 @@ module Async
 				end
 			end
 			
+			def peek
+				until yield(@read_buffer) || @eof
+					fill_read_buffer
+				end
+			end
+			
 			private
 			
 			# Fills the buffer from the underlying stream.

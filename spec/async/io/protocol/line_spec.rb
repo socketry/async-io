@@ -18,56 +18,48 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'stream'
+require 'async/io/protocol/line'
 
-module Async
-	module IO
-		class LineStream
-			def initialize(stream, eol: $\)
-				@stream = stream
-				@eol = eol
-			end
+RSpec.describe Async::IO::Protocol::Line do
+	let(:io) {StringIO.new}
+	let(:stream) {Async::IO::Stream.new(io)}
+	let(:protocol) {described_class.new(stream, "\n")}
+	
+	describe '#puts' do
+		it "should write line" do
+			protocol.puts "Hello World"
 			
-			attr :stream
-			attr :eol
-			
-			def flush
-				@stream.flush
-			end
-			
-			def write_lines(*args)
-				if args.empty?
-					@stream.write(@eol)
-				else
-					args.each do |arg|
-						@stream.write(arg)
-						@stream.write(@eol)
-					end
-				end
-			end
-			
-			def puts(*args)
-				write_lines(*args)
-				flush
-			end
-			
-			def read_line
-				@stream.read_until(@eol)
-			end
-			
-			alias gets read_line
-			
-			def each
-				return to_enum unless block_given?
-				
-				while line = self.gets
-					yield line
-				end
-			end
-			
-			def read_lines
-				@stream.read.split(@eol)
-			end
+			expect(io.string).to be == "Hello World\n"
+		end
+	end
+	
+	describe '#read_line' do
+		before(:each) do
+			io.puts "Hello World"
+			io.seek(0)
+		end
+		
+		it "should read one line" do
+			expect(protocol.read_line).to be == "Hello World"
+		end
+		
+		it "should be binary encoding" do
+			expect(protocol.read_line.encoding).to be == Encoding::BINARY
+		end
+	end
+	
+	describe '#read_lines' do
+		before(:each) do
+			io << "Hello\nWorld\n"
+			io.seek(0)
+		end
+		
+		it "should read multiple lines" do
+			expect(protocol.read_lines).to be == ["Hello", "World"]
+		end
+		
+		it "should be binary encoding" do
+			expect(protocol.read_lines.first.encoding).to be == Encoding::BINARY
 		end
 	end
 end
