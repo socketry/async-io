@@ -53,6 +53,8 @@ module Async
 							return read_buffer.slice(0, index)
 						end
 					end
+					
+					raise EOFError
 				end
 				
 				def each_line
