@@ -123,7 +123,11 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer
-				if buffer = @io.read(@block_size)
+				if @read_buffer.empty?
+					unless @io.read(@block_size, @read_buffer)
+						@eof = true
+					end
+				elsif buffer = @io.read(@block_size)
 					# We guarantee that the read_buffer remains ASCII-8BIT because read should always return ASCII-8BIT 
 					@read_buffer << buffer
 				else
