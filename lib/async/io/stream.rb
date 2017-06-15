@@ -24,21 +24,17 @@ require_relative 'generic'
 module Async
 	module IO
 		class Stream
-			def initialize(io, block_size: 1024*4, sync: false)
+			def initialize(io, block_size: 1024*8)
 				@io = io
 				@eof = false
 				
 				@block_size = block_size
-				@sync = sync
 				
 				@read_buffer = BinaryString.new
 				@write_buffer = BinaryString.new
 			end
 			
 			attr :io
-			
-			# The "sync mode" of the stream. See IO#sync for full details.
-			attr_accessor :sync
 			
 			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 			def read(size = nil)
@@ -58,7 +54,7 @@ module Async
 			def write(string)
 				@write_buffer << string
 				
-				if @sync || @write_buffer.size > @block_size
+				if @write_buffer.size > @block_size
 					flush
 				end
 				
@@ -100,17 +96,20 @@ module Async
 			def read_until(pattern)
 				index = @read_buffer.index(pattern)
 				
-				until index || @eof
+				until index
+					offset = @read_buffer.size
+
 					fill_read_buffer
 					
-					index = @read_buffer.index(pattern)
+					return if @eof
+
+					index = @read_buffer.index(pattern, offset)
 				end
 				
-				if line = consume_read_buffer(index)
-					consume_read_buffer(pattern.bytesize)
-					
-					return line
-				end
+				matched = @read_buffer.slice!(0, index)
+				@read_buffer.slice!(0, pattern.bytesize)
+				
+				return matched
 			end
 			
 			def peek
@@ -123,12 +122,7 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer
-				if @read_buffer.empty?
-					unless @io.read(@block_size, @read_buffer)
-						@eof = true
-					end
-				elsif buffer = @io.read(@block_size)
-					# We guarantee that the read_buffer remains ASCII-8BIT because read should always return ASCII-8BIT 
+				if buffer = @io.read(@block_size)
 					@read_buffer << buffer
 				else
 					@eof = true
