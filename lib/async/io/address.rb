@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 require_relative 'socket'
+require 'uri'
 
 module Async
 	module IO
@@ -27,6 +28,11 @@ module Async
 			include Comparable
 			
 			class << self
+				def parse(string, **options)
+					uri = URI.parse(string)
+					self.__send__(uri.scheme, uri.host, uri.port, **options)
+				end
+				
 				def tcp(*args, **options)
 					self.new([:tcp, *args], **options)
 				end
