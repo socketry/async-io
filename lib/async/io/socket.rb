@@ -106,11 +106,12 @@ module Async
 				task.annotate "connecting to #{remote_address.inspect}"
 				
 				wrapper = build(remote_address.afamily, remote_address.socktype, protocol) do |socket|
-					if local_address
-						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
-						socket.bind(local_address.to_sockaddr) if local_address
-					end
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 					
+					if local_address
+						socket.bind(local_address.to_sockaddr)
+					end
+
 					self.new(socket, task.reactor)
 				end
 				
