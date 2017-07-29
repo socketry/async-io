@@ -56,6 +56,8 @@ RSpec.describe "echo client/server" do
 				client.write(data)
 			end
 		end
+	ensure
+		puts "echo_server: #{$!.inspect}"
 	end
 	
 	def echo_client(server_address, data, responses)

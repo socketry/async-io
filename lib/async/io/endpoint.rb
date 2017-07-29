@@ -23,34 +23,37 @@ require 'uri'
 
 module Async
 	module IO
-		class Address < Struct.new(:specification, :options)
+		Address = Addrinfo
+		
+		class Endpoint < Struct.new(:specification, :options)
 			include ::Socket::Constants
 			include Comparable
 			
 			class << self
 				def parse(string, **options)
 					uri = URI.parse(string)
-					self.__send__(uri.scheme, uri.host, uri.port, **options)
+					self.send(uri.scheme, uri.host, uri.port, **options)
 				end
 				
 				def tcp(*args, **options)
-					self.new([:tcp, *args], **options)
+					self.new(Address.tcp(*args), **options)
 				end
 				
 				def udp(*args, **options)
-					self.new([:udp, *args], **options)
+					self.new(Address.udp(*args), **options)
 				end
 				
 				def unix(*args, **options)
-					self.new([:unix, *args], **options)
+					self.new(Address.unix(*args), **options)
 				end
 				
 				def each(specifications, &block)
 					specifications.each do |specification|
 						if specification.is_a? self
 							yield specification
+						elsif specification.is_a? Array
+							yield self.send(*specification)
 						else
-							# Perhaps detect options here?
 							yield self.new(specification)
 						end
 					end
@@ -61,43 +64,43 @@ module Async
 				super(specification, options)
 			end
 			
-			def == other
-				self.to_sockaddr == other.to_sockaddr
-			end
-			
-			def <=> other
-				self.to_sockaddr <=> other.to_sockaddr
-			end
-			
 			def to_sockaddr
-				addrinfo.to_sockaddr
+				address.to_sockaddr
 			end
 			
 			# This is how addresses are internally converted, e.g. within `Socket#sendto`.
 			alias to_str to_sockaddr
 			
-			def socktype
-				addrinfo.socktype
+			def address
+				@address ||= case specification
+					when Addrinfo
+						specification
+					when ::BasicSocket, BasicSocket
+						specification.local_address
+				else
+					raise ArgumentError, "Not sure how to convert #{specification} into address!"
+				end
 			end
 			
-			# Preferred accessor for socket type.
-			alias type socktype
-			
-			def afamily
-				addrinfo.afamily
+			# SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, etc.
+			def socket_type
+				address.socktype
 			end
 			
-			# Preferred accessor for address family.
-			alias family afamily
+			# PF_* eg PF_INET etc, normally identical to AF_* constants.
+			def socket_domain
+				address.afamily
+			end
 			
-			# def connect? accept? DatagramHandler StreamHandler
+			# IPPROTO_TCP, IPPROTO_UDP, IPPROTO_IPX, etc.
+			def socket_protocol
+				address.protocol
+			end
 			
 			def bind(&block)
 				case specification
 				when Addrinfo
 					Socket.bind(specification, **options, &block)
-				when Array
-					Socket.bind(Addrinfo.send(*specification), **options, &block)
 				when ::BasicSocket
 					yield Socket.new(specification)
 				when BasicSocket
@@ -118,31 +121,14 @@ module Async
 			
 			def connect(&block)
 				case specification
-				when Addrinfo, Array
+				when Addrinfo
 					Socket.connect(self, &block)
 				when ::BasicSocket
 					yield Async::IO.try_convert(specification)
 				when BasicSocket
 					yield specification
 				else
-					raise ArgumentError, "Not sure how to bind to #{specification}!"
-				end
-			end
-			
-			private
-			
-			def addrinfo
-				@addrinfo ||= case specification
-					when Addrinfo
-						specification
-					when Array
-						Addrinfo.send(*specification)
-					when ::BasicSocket
-						specification.local_address
-					when BasicSocket
-						specification.local_address
-				else
-					raise ArgumentError, "Not sure how to convert #{specification} into address!"
+					raise ArgumentError, "Not sure how to connect to #{specification}!"
 				end
 			end
 		end

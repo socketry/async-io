@@ -18,28 +18,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/io/address'
+require 'async/io/endpoint'
 
-RSpec.describe Async::IO::Address do
+RSpec.describe Async::IO::Endpoint do
 	include_context Async::RSpec::Reactor
 	
-	describe Async::IO::Address.new([:tcp, '0.0.0.0', 1234]) do
+	describe Async::IO::Endpoint.tcp('0.0.0.0', 1234) do
 		it "should be a tcp binding" do
-			expect(subject.socktype).to be == ::Socket::SOCK_STREAM
+			expect(subject.socket_type).to be == ::Socket::SOCK_STREAM
 		end
 		
 		it "should generate valid address" do
-			expect(subject).to be == Addrinfo.tcp('0.0.0.0', 1234)
+			expect(subject.address).to be == Async::IO::Address.tcp('0.0.0.0', 1234)
 		end
 	end
 	
-	describe Async::IO::Address.new(TCPServer.new('0.0.0.0', 1234)) do
+	describe Async::IO::Endpoint.new(TCPServer.new('0.0.0.0', 1234)) do
 		it "should be a tcp binding" do
-			expect(subject.socktype).to be == ::Socket::SOCK_STREAM
+			expect(subject.socket_type).to be == ::Socket::SOCK_STREAM
 		end
 		
 		it "should generate valid address" do
-			expect(subject).to be == Addrinfo.tcp('0.0.0.0', 1234)
+			expect(subject.address).to be == Async::IO::Address.tcp('0.0.0.0', 1234)
 		end
 	end
 end

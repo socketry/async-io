@@ -23,7 +23,7 @@ require 'async/io'
 RSpec.describe "echo client/server" do
 	include_context Async::RSpec::Reactor
 	
-	let(:server_address) {Async::IO::Address.new([:tcp, '0.0.0.0', 9000])}
+	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 9000)}
 	
 	def echo_server(server_address)
 		Async::Reactor.run do |task|

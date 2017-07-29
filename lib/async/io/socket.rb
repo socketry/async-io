@@ -102,10 +102,10 @@ module Async
 			# @param remote_address [Addrinfo] The remote address to connect to.
 			# @param local_address [Addrinfo] The local address to bind to before connecting.
 			# @option protcol [Integer] The socket protocol to use.
-			def self.connect(remote_address, local_address = nil, protocol: 0, task: Task.current)
+			def self.connect(remote_address, local_address = nil, task: Task.current)
 				task.annotate "connecting to #{remote_address.inspect}"
 				
-				wrapper = build(remote_address.afamily, remote_address.socktype, protocol) do |socket|
+				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol) do |socket|
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 					
 					if local_address
