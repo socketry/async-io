@@ -122,7 +122,7 @@ module Async
 			def connect(&block)
 				case specification
 				when Addrinfo
-					Socket.connect(self, &block)
+					Socket.connect(specification, &block)
 				when ::BasicSocket
 					yield Async::IO.try_convert(specification)
 				when BasicSocket
