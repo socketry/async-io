@@ -64,7 +64,7 @@ Async::Reactor.run do
 	server = echo_server(endpoint)
 	
 	5.times.collect do |i|
-		echo_client(server_address, "Hello World #{i}")
+		echo_client(endpoint, "Hello World #{i}")
 	end.each(&:wait)
 	
 	server.stop
