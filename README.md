@@ -31,10 +31,10 @@ Basic echo server (from `spec/async/io/echo_spec.rb`):
 ```ruby
 require 'async/io'
 
-def echo_server(server_address)
+def echo_server(endpoint)
 	Async::Reactor.run do |task|
 		# This is a synchronous block within the current task:
-		Async::IO::Socket.accept(server_address) do |client|
+		endpoint.accept do |client|
 			# This is an asynchronous block within the current reactor:
 			data = client.read(512)
 			
@@ -46,9 +46,9 @@ def echo_server(server_address)
 	end
 end
 
-def echo_client(server_address, data)
+def echo_client(endpoint, data)
 	Async::Reactor.run do |task|
-		Async::IO::Socket.connect(server_address) do |peer|
+		endpoint.connect do |peer|
 			result = peer.write(data)
 			
 			message = peer.read(512)
@@ -59,9 +59,9 @@ def echo_client(server_address, data)
 end
 
 Async::Reactor.run do
-	server_address = Async::IO::Address.tcp('0.0.0.0', 9000)
+	endpoint = Async::IO::Endpoint.tcp('0.0.0.0', 9000)
 	
-	server = echo_server(server_address)
+	server = echo_server(endpoint)
 	
 	5.times.collect do |i|
 		echo_client(server_address, "Hello World #{i}")
