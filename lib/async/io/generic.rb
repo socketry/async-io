@@ -94,17 +94,9 @@ module Async
 						@io.__send__(*args, exception: false)
 					end
 				end
-			else
-				def async_send(*args)
-					async do
-						@io.__send__(*args)
-					end
-				end
-			end
-			
-			def async
-				while true
-					begin
+				
+				def async
+					while true
 						result = yield
 						
 						case result
@@ -115,10 +107,42 @@ module Async
 						else
 							return result
 						end
-					rescue ::IO::WaitReadable
-						wait_readable
-					rescue ::IO::WaitWritable
-						wait_writable
+					end
+				end
+			elsif RUBY_VERSION >= "2.1"
+				def async_send(*args)
+					async do
+						@io.__send__(*args)
+					end
+				end
+				
+				def async
+					while true
+						begin
+							return yield
+						rescue ::IO::WaitReadable, ::IO::EAGAINWaitReadable
+							wait_readable
+						rescue ::IO::WaitWritable, ::IO::EAGAINWaitWritable
+							wait_writable
+						end
+					end
+				end
+			else
+				def async_send(*args)
+					async do
+						@io.__send__(*args)
+					end
+				end
+				
+				def async
+					while true
+						begin
+							return yield
+						rescue ::IO::WaitReadable
+							wait_readable
+						rescue ::IO::WaitWritable
+							wait_writable
+						end
 					end
 				end
 			end
