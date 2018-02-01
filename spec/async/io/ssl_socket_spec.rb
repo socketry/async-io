@@ -20,26 +20,16 @@
 
 require 'async/io/ssl_socket'
 
+require 'async/rspec/ssl'
+
 RSpec.describe Async::Reactor do
 	include_context Async::RSpec::Leaks
-	
-	let(:ssl_client_params) do
-		{
-			ca_file: File.expand_path(certificate_authority_key_file, __dir__)
-		}
-	end
-
-	let(:ssl_server_params) do
-		{
-			cert: OpenSSL::X509::Certificate.new(File.read(server_cert_file)),
-			key: OpenSSL::PKey::RSA.new(File.read(server_key_file))
-		}
-	end
+	include_context Async::RSpec::SSL::VerifiedContexts
 	
 	# Shared port for localhost network tests.
 	let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 6779, reuse_port: true)}
-	let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_params: ssl_server_params)}
-	let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_params: ssl_client_params)}
+	let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
+	let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
 	
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
@@ -67,9 +57,7 @@ RSpec.describe Async::Reactor do
 	
 	describe "#connect" do
 		context "with a trusted certificate" do
-			let(:certificate_authority_key_file) {File.expand_path("ssl/trusted-ca.crt", __dir__)}
-			let(:server_cert_file) {File.expand_path("ssl/trusted-cert.crt", __dir__)}
-			let(:server_key_file) {File.expand_path("ssl/trusted-cert.key", __dir__)}
+			include_context Async::RSpec::SSL::ValidCertificate
 			
 			it "should start server and send data" do
 				subject.async do
@@ -82,9 +70,7 @@ RSpec.describe Async::Reactor do
 		end
 
 		context "with an untrusted certificate" do
-			let(:certificate_authority_key_file) {File.expand_path("ssl/trusted-ca.crt", __dir__)}
-			let(:server_cert_file) {File.expand_path("ssl/untrusted-cert.crt", __dir__)}
-			let(:server_key_file) {File.expand_path("ssl/untrusted-cert.key", __dir__)}
+			include_context Async::RSpec::SSL::InvalidCertificate
 			
 			it "should fail to connect" do
 				subject.async do

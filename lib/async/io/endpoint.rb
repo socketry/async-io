@@ -143,6 +143,10 @@ module Async
 		end
 		
 		class SecureEndpoint < Endpoint
+			def hostname
+				options[:hostname]
+			end
+			
 			def params
 				options[:ssl_params]
 			end
@@ -173,6 +177,11 @@ module Async
 			def connect(&block)
 				specification.connect do |socket|
 					ssl_socket = SSLSocket.connect_socket(socket, context)
+					
+					# Used for SNI:
+					if hostname = self.hostname
+						ssl_socket.hostname = hostname
+					end
 					
 					ssl_socket.connect
 					

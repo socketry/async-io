@@ -41,6 +41,7 @@ module Async
 				@io.to_io.remote_address
 			end
 			
+			# This method/implementation might change in the future, don't depend on it :)
 			def self.connect_socket(socket, context)
 				io = wrapped_klass.new(socket.io, context)
 				
