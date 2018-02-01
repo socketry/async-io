@@ -33,6 +33,14 @@ module Async
 			wrap_blocking_method :accept, :accept_nonblock
 			wrap_blocking_method :connect, :connect_nonblock
 			
+			def local_address
+				@io.to_io.local_address
+			end
+			
+			def remote_address
+				@io.to_io.remote_address
+			end
+			
 			def self.connect_socket(socket, context)
 				io = wrapped_klass.new(socket.io, context)
 				
@@ -44,10 +52,14 @@ module Async
 		end
 		
 		class SSLServer
+			extend Forwardable
+			
 			def initialize(server, context)
 				@server = server
 				@context = context
 			end
+			
+			def_delegators :@server, :local_address, :setsockopt, :getsockopt
 			
 			attr :server
 			attr :context
