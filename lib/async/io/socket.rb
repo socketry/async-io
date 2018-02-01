@@ -36,19 +36,23 @@ module Async
 		end
 		
 		module ServerSocket
-			def accept
+			def accept(task: Task.current)
 				peer, address = async_send(:accept_nonblock)
 				
+				wrapper = Socket.new(peer, self.reactor)
+				
 				if block_given?
-					wrapper = Socket.new(peer, self.reactor)
-					
-					begin
-						yield wrapper, address
-					ensure
-						wrapper.close
+					task.async do
+						task.annotate "incoming connection #{address}"
+						
+						begin
+							yield wrapper, address
+						ensure
+							wrapper.close
+						end
 					end
 				else
-					return Socket.new(peer, self.reactor), address
+					return wrapper, address
 				end
 			end
 			
@@ -56,14 +60,8 @@ module Async
 				task.annotate "accepting connections #{self.local_address.inspect}"
 				
 				while true
-					task.async(*self.accept) do |task, io, address|
-						task.annotate "incoming connection #{address}"
-						
-						begin
-							yield io, address
-						ensure
-							io.close
-						end
+					self.accept(task: task) do |io, address|
+						yield io, address
 					end
 				end
 			end
@@ -73,7 +71,6 @@ module Async
 			wraps ::Socket, :bind, :ipv6only!, :listen
 			
 			include ::Socket::Constants
-			
 			include ServerSocket
 			
 			def connect(*args)
@@ -85,7 +82,7 @@ module Async
 			end
 			
 			def self.build(*args, task: Task.current)
-				socket = ::Socket.new(*args)
+				socket = wrapped_klass.new(*args)
 				
 				yield socket
 				
@@ -102,10 +99,10 @@ module Async
 			# @param remote_address [Addrinfo] The remote address to connect to.
 			# @param local_address [Addrinfo] The local address to bind to before connecting.
 			# @option protcol [Integer] The socket protocol to use.
-			def self.connect(remote_address, local_address = nil, task: Task.current)
+			def self.connect(remote_address, local_address = nil, task: Task.current, **options)
 				task.annotate "connecting to #{remote_address.inspect}"
 				
-				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol) do |socket|
+				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 					
 					if local_address
@@ -140,10 +137,10 @@ module Async
 			# @param local_address [Address] The local address to bind to.
 			# @option protocol [Integer] The socket protocol to use.
 			# @option reuse_port [Boolean] Allow this port to be bound in multiple processes.
-			def self.bind(local_address, protocol: 0, reuse_port: false, task: Task.current, &block)
+			def self.bind(local_address, protocol: 0, reuse_port: false, task: Task.current, **options, &block)
 				task.annotate "binding to #{local_address.inspect}"
 				
-				wrapper = build(local_address.afamily, local_address.socktype, protocol) do |socket|
+				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
 					socket.bind(local_address.to_sockaddr)
