@@ -46,13 +46,14 @@ module Async
 					AddressEndpoint.new(Address.unix(*args), **options)
 				end
 				
-				# Needs to include `context: SSLContext.new(...)`
 				def ssl(*args, **options)
 					SecureEndpoint.new(Endpoint.tcp(*args, **options), **options)
 				end
 				
 				# Generate a list of endpoints from an array.
 				def each(specifications, &block)
+					return to_enum(:each, specifications) unless block_given?
+					
 					specifications.each do |specification|
 						if specification.is_a? self
 							yield specification
