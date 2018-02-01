@@ -33,7 +33,7 @@ module Async
 				# @!macro [attach] wrap_blocking_method
 				#   @method $1
 				#   Invokes `$2` on the underlying {io}. If the operation would block, the current task is paused until the operation can succeed, at which point it's resumed and the operation is completed.
-				def wrap_blocking_method(new_name, method_name, invert: true, &block)
+				def wrap_blocking_method(new_name, method_name, invert: true)
 					define_method(new_name) do |*args|
 						async_send(method_name, *args)
 					end
