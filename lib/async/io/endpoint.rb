@@ -98,7 +98,7 @@ module Async
 			end
 			
 			def accept(&block)
-				backlog = self.options.fetch(:backlog, SOMAXCONN)
+				backlog = self.options.fetch(:backlog, Socket::SOMAXCONN)
 				
 				bind do |server|
 					server.listen(backlog)
