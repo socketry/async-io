@@ -26,7 +26,6 @@ module Async
 		Address = Addrinfo
 		
 		class Endpoint < Struct.new(:specification, :options)
-			include ::Socket::Constants
 			include Comparable
 			
 			class << self
@@ -36,23 +35,31 @@ module Async
 				end
 				
 				def tcp(*args, **options)
-					self.new(Address.tcp(*args), **options)
+					AddressEndpoint.new(Address.tcp(*args), **options)
 				end
 				
 				def udp(*args, **options)
-					self.new(Address.udp(*args), **options)
+					AddressEndpoint.new(Address.udp(*args), **options)
 				end
 				
 				def unix(*args, **options)
-					self.new(Address.unix(*args), **options)
+					AddressEndpoint.new(Address.unix(*args), **options)
 				end
 				
+				# Needs to include `context: SSLContext.new(...)`
+				def ssl(*args, **options)
+					SecureEndpoint.new(Endpoint.tcp(*args, **options), **options)
+				end
+				
+				# Generate a list of endpoints from an array.
 				def each(specifications, &block)
 					specifications.each do |specification|
 						if specification.is_a? self
 							yield specification
 						elsif specification.is_a? Array
 							yield self.send(*specification)
+						elsif specification.is_a? String
+							yield self.parse(specification)
 						else
 							yield self.new(specification)
 						end
@@ -71,17 +78,6 @@ module Async
 			# This is how addresses are internally converted, e.g. within `Socket#sendto`.
 			alias to_str to_sockaddr
 			
-			def address
-				@address ||= case specification
-					when Addrinfo
-						specification
-					when ::BasicSocket, BasicSocket
-						specification.local_address
-				else
-					raise ArgumentError, "Not sure how to convert #{specification} into address!"
-				end
-			end
-			
 			# SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, etc.
 			def socket_type
 				address.socktype
@@ -97,38 +93,89 @@ module Async
 				address.protocol
 			end
 			
-			def bind(&block)
-				case specification
-				when Addrinfo
-					Socket.bind(specification, **options, &block)
-				when ::BasicSocket
-					yield Socket.new(specification)
-				when BasicSocket
-					yield specification
-				else
-					raise ArgumentError, "Not sure how to bind to #{specification}!"
-				end
+			def bind
+				yield specification
 			end
 			
 			def accept(&block)
 				backlog = self.options.fetch(:backlog, SOMAXCONN)
 				
-				bind do |socket|
-					socket.listen(backlog)
-					socket.accept_each(&block)
+				bind do |server|
+					server.listen(backlog)
+					server.accept_each(&block)
+				end
+			end
+			
+			def connect
+				yield specification
+			end
+		end
+		
+		# This class will open and close the socket automatically.
+		class AddressEndpoint < Endpoint
+			def address
+				specification
+			end
+			
+			def bind(&block)
+				Socket.bind(specification, **options, &block)
+			end
+			
+			def connect(&block)
+				Socket.connect(specification, &block)
+			end
+		end
+		
+		# This class doesn't exert ownership over the specified socket.
+		class SocketEndpoint < Endpoint
+			def address
+				specification.local_address
+			end
+			
+			def bind(&block)
+				yield Socket.new(specification, **options)
+			end
+			
+			def connect(&block)
+				yield Async::IO.try_convert(specification)
+			end
+		end
+		
+		class SecureEndpoint < Endpoint
+			def params
+				options[:ssl_params]
+			end
+			
+			def context
+				if context = options[:ssl_context]
+					if params = self.params
+						context = context.dup
+						context.set_params(params)
+					end
+				else
+					context = ::OpenSSL::SSL::SSLContext.new
+					
+					if params = self.params
+						context.set_params(params)
+					end
+				end
+				
+				return context
+			end
+			
+			def bind(&block)
+				specification.bind do |server|
+					yield SSLServer.new(server, context)
 				end
 			end
 			
 			def connect(&block)
-				case specification
-				when Addrinfo
-					Socket.connect(specification, &block)
-				when ::BasicSocket
-					yield Async::IO.try_convert(specification)
-				when BasicSocket
-					yield specification
-				else
-					raise ArgumentError, "Not sure how to connect to #{specification}!"
+				specification.connect do |socket|
+					ssl_socket = SSLSocket.connect_socket(socket, context)
+					
+					ssl_socket.connect
+					
+					yield ssl_socket
 				end
 			end
 		end

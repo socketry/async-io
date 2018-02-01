@@ -33,7 +33,7 @@ RSpec.describe Async::IO::Endpoint do
 		end
 	end
 	
-	describe Async::IO::Endpoint.new(TCPServer.new('0.0.0.0', 1234)) do
+	describe Async::IO::SocketEndpoint.new(TCPServer.new('0.0.0.0', 1234)) do
 		it "should be a tcp binding" do
 			expect(subject.socket_type).to be == ::Socket::SOCK_STREAM
 		end
