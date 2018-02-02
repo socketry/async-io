@@ -22,8 +22,13 @@ require 'async/io'
 require 'benchmark'
 
 RSpec.describe "echo client/server" do
+	# macOS has a rediculously hard time to do this.
+	# sudo sysctl -w net.inet.ip.portrange.first=10000
+	# sudo sysctl -w net.inet.ip.portrange.hifirst=10000
+	# Probably due to the use of select.
+	
 	let(:repeats) {10000}
-	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 9000)}
+	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10102)}
 	
 	def echo_server(server_address)
 		Async::Reactor.run do |task|
@@ -70,8 +75,8 @@ RSpec.describe "echo client/server" do
 					
 					responses << message
 				end
-			rescue Errno::ECONNREFUSED
-				puts "Connection refused..."
+			rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EADDRINUSE
+				puts "#{data}: #{$!}..."
 				# If the connection was refused, it means the server probably can't accept connections any faster than it currently is, so we simply retry.
 				retry
 			end
