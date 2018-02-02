@@ -43,7 +43,7 @@ module Async
 			
 			# This method/implementation might change in the future, don't depend on it :)
 			def self.connect_socket(socket, context)
-				io = wrapped_klass.new(socket.io, context)
+				io = wrapped_klass.new(socket.to_io, context)
 				
 				# This ensures that when the internal IO is closed, it also closes the internal socket:
 				io.sync_close = true
