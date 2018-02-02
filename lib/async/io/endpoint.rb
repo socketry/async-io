@@ -94,9 +94,9 @@ module Async
 				address.protocol
 			end
 			
-			def bind
-				yield specification
-			end
+			# def bind
+			# 	yield specification
+			# end
 			
 			def accept(&block)
 				backlog = self.options.fetch(:backlog, Socket::SOMAXCONN)
@@ -107,9 +107,9 @@ module Async
 				end
 			end
 			
-			def connect
-				yield specification
-			end
+			# def connect
+			# 	yield specification
+			# end
 		end
 		
 		# This class will open and close the socket automatically.
