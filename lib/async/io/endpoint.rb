@@ -119,11 +119,11 @@ module Async
 			end
 			
 			def bind(&block)
-				Socket.bind(specification, **options, &block)
+				Socket.bind(address, **options, &block)
 			end
 			
 			def connect(&block)
-				Socket.connect(specification, &block)
+				Socket.connect(address, &block)
 			end
 		end
 		
@@ -143,6 +143,10 @@ module Async
 		end
 		
 		class SecureEndpoint < Endpoint
+			def address
+				specification.address
+			end
+			
 			def hostname
 				options[:hostname]
 			end
