@@ -38,7 +38,9 @@ RSpec.describe Async::IO::Socket do
 		
 		it "should fail to bind to port < 1024" do
 			expect do
-				Async::IO::Socket.bind(address)
+				Async::IO::Socket.bind(address) do |socket|
+					socket.listen(1)
+				end
 			end.to raise_error(Errno::EACCES)
 		end
 	end

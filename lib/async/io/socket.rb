@@ -21,6 +21,91 @@
 require 'socket'
 require_relative 'generic'
 
+if RUBY_ENGINE == 'jruby'
+	# We hide ClientSocket and ServerSocket behind a fascade:
+	::ClientSocket = ::Socket
+	::ServerSocket = ::Socket
+	Object.send(:remove_const, :Socket)
+	
+	class Socket
+		extend Forwardable
+		
+		Constants = ClientSocket::Constants
+		include Constants
+		
+		def initialize(*args)
+			@args = args
+			@io = nil
+			
+			@queue = []
+			@bind = nil
+		end
+		
+		def setsockopt(*args)
+			if @io
+				@io.setsockopt(*args)
+			else
+				@queue << [:setsockopt, args]
+			end
+		end
+		
+		def io=(io)
+			@io = io
+			
+			@queue.each do |name, args|
+				@io.__send__(name, *args)
+			end
+		end
+		
+		def listen(backlog = SOMAXCONN)
+			self.io ||= ServerSocket.new(*@args)
+			
+			@io.bind(*@bind)
+			@io.listen(backlog)
+		end
+		
+		def bind(*args)
+			@bind = args
+		end
+		
+		def connect(*args)
+			self.io ||= ClientSocket.new(*@args)
+			@io.bind(*@bind) if @bind
+			@io.connect(*args)
+		end
+		
+		def connect_nonblock(*args)
+			self.io ||= ClientSocket.new(*@args)
+			@io.connect_nonblock(*args)
+		end
+		
+		def close
+			@io.close if @io
+		end
+		
+		def closed?
+			@io.closed? if @io
+		end
+		
+		def fileno
+			@io.fileno
+		end
+		
+		def to_io
+			@io.to_io
+		end
+		
+		attr :io
+		
+		def_delegators :@io, :accept, :accept_nonblock, :read_nonblock, :write_nonblock, :local_address, :remote_address, :sync
+		
+		def method_missing(*args)
+			puts "METHOD MISSING: #{args.inspect}"
+			@io.__send__(*args)
+		end
+	end
+end
+
 module Async
 	module IO
 		class BasicSocket < Generic
@@ -143,6 +228,7 @@ module Async
 				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
+					
 					socket.bind(local_address.to_sockaddr)
 				end
 				
