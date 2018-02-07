@@ -23,6 +23,11 @@ require 'forwardable'
 
 module Async
 	module IO
+		# Convert a Ruby ::IO object to a wrapped instance:
+		def self.try_convert(io, &block)
+			Generic::WRAPPERS[io.class].wrap(io, &block)
+		end
+		
 		# Represents an asynchronous IO within a reactor.
 		class Generic < Wrapper
 			extend Forwardable

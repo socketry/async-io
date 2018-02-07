@@ -61,8 +61,12 @@ module Async
 							yield self.send(*specification)
 						elsif specification.is_a? String
 							yield self.parse(specification)
+						elsif specification.is_a? ::BasicSocket
+							yield SocketEndpoint.new(specification)
+						elsif specification.is_a? Generic
+							yield Endpoint.new(specification)
 						else
-							yield self.new(specification)
+							raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
 						end
 					end
 				end
@@ -70,6 +74,10 @@ module Async
 			
 			def initialize(specification, **options)
 				super(specification, options)
+			end
+			
+			def address
+				specification.local_address
 			end
 			
 			def to_sockaddr
@@ -94,9 +102,9 @@ module Async
 				address.protocol
 			end
 			
-			# def bind
-			# 	yield specification
-			# end
+			def bind
+				yield specification
+			end
 			
 			def accept(&block)
 				backlog = self.options.fetch(:backlog, Socket::SOMAXCONN)
@@ -107,9 +115,9 @@ module Async
 				end
 			end
 			
-			# def connect
-			# 	yield specification
-			# end
+			def connect
+				yield specification
+			end
 		end
 		
 		# This class will open and close the socket automatically.
@@ -127,14 +135,14 @@ module Async
 			end
 		end
 		
-		# This class doesn't exert ownership over the specified socket.
+		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
 		class SocketEndpoint < Endpoint
 			def address
 				specification.local_address
 			end
 			
 			def bind(&block)
-				yield Socket.new(specification, **options)
+				yield Socket.new(specification)
 			end
 			
 			def connect(&block)

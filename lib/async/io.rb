@@ -24,11 +24,3 @@ require_relative "io/generic"
 require_relative "io/socket"
 require_relative "io/endpoint"
 require_relative "io/version"
-
-module Async
-	module IO
-		def self.try_convert(io)
-			Generic::WRAPPERS[io.class].wrap(io)
-		end
-	end
-end
