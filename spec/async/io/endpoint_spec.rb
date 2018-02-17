@@ -18,7 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/io/endpoint'
+# This seems to break rbx
+# require 'async/io/endpoint'
 
 RSpec.describe Async::IO::Endpoint do
 	include_context Async::RSpec::Reactor
