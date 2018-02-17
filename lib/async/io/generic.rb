@@ -93,7 +93,7 @@ module Async
 			
 			protected
 			
-			if RUBY_VERSION >= "2.3"
+			if RUBY_ENGINE == "ruby" and RUBY_VERSION >= "2.3"
 				def async_send(*args)
 					async do
 						@io.__send__(*args, exception: false)
@@ -114,7 +114,7 @@ module Async
 						end
 					end
 				end
-			elsif RUBY_VERSION >= "2.1"
+			elsif RUBY_ENGINE == "ruby" and RUBY_VERSION >= "2.1"
 				def async_send(*args)
 					async do
 						@io.__send__(*args)
