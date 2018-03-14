@@ -42,8 +42,8 @@ module Async
 				wrapper = Socket.new(peer, self.reactor)
 				
 				if block_given?
-					task.async do
-						task.annotate "incoming connection #{address}"
+					task.async do |task|
+						task.annotate "incoming connection #{address.inspect}"
 						
 						begin
 							yield wrapper, address
