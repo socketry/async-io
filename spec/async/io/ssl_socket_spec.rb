@@ -27,7 +27,7 @@ RSpec.describe Async::Reactor do
 	include_context Async::RSpec::SSL::VerifiedContexts
 	
 	# Shared port for localhost network tests.
-	let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 6779, reuse_port: true)}
+	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true)}
 	let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
 	let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
 	

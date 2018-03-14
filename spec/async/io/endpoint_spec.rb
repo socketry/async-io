@@ -24,23 +24,19 @@
 RSpec.describe Async::IO::Endpoint do
 	include_context Async::RSpec::Reactor
 	
-	describe Async::IO::Endpoint.tcp('0.0.0.0', 1234) do
+	describe Async::IO::Endpoint.tcp('0.0.0.0', 5234, reuse_port: true) do
 		it "should be a tcp binding" do
-			expect(subject.socket_type).to be == ::Socket::SOCK_STREAM
-		end
-		
-		it "should generate valid address" do
-			expect(subject.address).to be == Async::IO::Address.tcp('0.0.0.0', 1234)
+			subject.bind do |server|
+				expect(server.local_address.socktype).to be == ::Socket::SOCK_STREAM
+			end
 		end
 	end
 	
 	describe Async::IO::SocketEndpoint.new(TCPServer.new('0.0.0.0', 1234)) do
-		it "should be a tcp binding" do
-			expect(subject.socket_type).to be == ::Socket::SOCK_STREAM
-		end
-		
-		it "should generate valid address" do
-			expect(subject.address).to be == Async::IO::Address.tcp('0.0.0.0', 1234)
+		it "should bind to given socket" do
+			subject.bind do |server|
+				expect(server.io).to be == subject.specification
+			end
 		end
 	end
 end

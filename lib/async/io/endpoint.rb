@@ -34,12 +34,17 @@ module Async
 					self.send(uri.scheme, uri.host, uri.port, **options)
 				end
 				
+				# args: nodename, service, family, socktype, protocol, flags
 				def tcp(*args, **options)
-					AddressEndpoint.new(Address.tcp(*args), **options)
+					args[3] = ::Socket::SOCK_STREAM
+					
+					HostEndpoint.new(args, **options)
 				end
 				
 				def udp(*args, **options)
-					AddressEndpoint.new(Address.udp(*args), **options)
+					args[3] = ::Socket::SOCK_DGRAM
+					
+					HostEndpoint.new(args, **options)
 				end
 				
 				def unix(*args, **options)
@@ -47,7 +52,7 @@ module Async
 				end
 				
 				def ssl(*args, **options)
-					SecureEndpoint.new(Endpoint.tcp(*args, **options), **options)
+					SecureEndpoint.new(self.tcp(*args, **options), **options)
 				end
 				
 				# Generate a list of endpoints from an array.
@@ -76,32 +81,6 @@ module Async
 				super(specification, options)
 			end
 			
-			def address
-				specification.local_address
-			end
-			
-			def to_sockaddr
-				address.to_sockaddr
-			end
-			
-			# This is how addresses are internally converted, e.g. within `Socket#sendto`.
-			alias to_str to_sockaddr
-			
-			# SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, etc.
-			def socket_type
-				address.socktype
-			end
-			
-			# PF_* eg PF_INET etc, normally identical to AF_* constants.
-			def socket_domain
-				address.afamily
-			end
-			
-			# IPPROTO_TCP, IPPROTO_UDP, IPPROTO_IPX, etc.
-			def socket_protocol
-				address.protocol
-			end
-			
 			def bind
 				yield specification
 			end
@@ -120,27 +99,50 @@ module Async
 			end
 		end
 		
-		# This class will open and close the socket automatically.
-		class AddressEndpoint < Endpoint
-			def address
-				specification
-			end
-			
+		class HostEndpoint < Endpoint
 			def bind(&block)
-				Socket.bind(address, **options, &block)
+				task = Task.current
+				tasks = []
+				
+				task.annotate("binding to #{specification.inspect}")
+				
+				Addrinfo.foreach(*specification).each do |address|
+					tasks << task.async do
+						Socket.bind(address, **options, &block)
+					end
+				end
+				
+				tasks.each(&:wait)
 			end
 			
 			def connect(&block)
-				Socket.connect(address, &block)
+				last_error = nil
+				
+				Addrinfo.foreach(*specification).each do |address|
+					begin
+						return Socket.connect(address, &block)
+					rescue
+						last_error = $!
+					end
+				end
+				
+				raise last_error
+			end
+		end
+		
+		# This class will open and close the socket automatically.
+		class AddressEndpoint < Endpoint
+			def bind(&block)
+				Socket.bind(specification, **options, &block)
+			end
+			
+			def connect(&block)
+				Socket.connect(specification, &block)
 			end
 		end
 		
 		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
 		class SocketEndpoint < Endpoint
-			def address
-				specification.local_address
-			end
-			
 			def bind(&block)
 				yield Socket.new(specification)
 			end
@@ -151,10 +153,6 @@ module Async
 		end
 		
 		class SecureEndpoint < Endpoint
-			def address
-				specification.address
-			end
-			
 			def hostname
 				options[:hostname]
 			end
