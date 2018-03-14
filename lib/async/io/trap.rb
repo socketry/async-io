@@ -37,6 +37,9 @@ module Async
 			
 			# Block the calling task until the signal occurs.
 			def trap
+				task = Task.current
+				task.annotate("waiting for signal #{@name}")
+				
 				notification = Notification.new
 				@notifications << notification
 				
@@ -53,7 +56,7 @@ module Async
 			
 			# Signal all waiting tasks that the trap occurred.
 			# @return [void]
-			def trigger
+			def trigger(signal_number = nil)
 				@notifications.each(&:signal)
 			end
 		end
