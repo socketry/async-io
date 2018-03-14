@@ -19,8 +19,6 @@ end
 require "bundler/setup"
 require "async/io"
 
-puts "Running on #{RUBY_VERSION.inspect} #{RUBY_ENGINE.inspect}"
-
 # This is useful for specs, but I hesitate to monkey patch a core class in the library itself.
 class Addrinfo
 	def == other

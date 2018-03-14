@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require_relative 'generic'
+
 module Async
 	module IO
-		VERSION = "1.3.0"
+		# A cross-thread/process notification pipe.
+		class Notification
+			def initialize
+				pipe = ::IO.pipe
+				
+				@input = Async::IO::Generic.new(pipe.first)
+				@output = pipe.last
+			end
+			
+			def close
+				@input.close
+				@output.close
+			end
+			
+			# Wait for signal to be called.
+			# @return [Object]
+			def wait
+				@input.read(1)
+			end
+			
+			# Signal to a given task that it should resume operations.
+			# @return [void]
+			def signal
+				@output.write(".")
+			end
+		end
+		
+		class Trap
+		end
 	end
 end

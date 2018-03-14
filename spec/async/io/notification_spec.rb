@@ -18,8 +18,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-module Async
-	module IO
-		VERSION = "1.3.0"
+require 'async/io/notification'
+
+RSpec.describe Async::IO::Notification do
+	include_context Async::RSpec::Reactor
+	
+	it "should wait for notification" do
+		waiting_task = reactor.async do
+			subject.wait
+		end
+		
+		expect(waiting_task.status).to be :running
+		
+		signalling_task = reactor.async do
+			subject.signal
+		end
+		
+		signalling_task.wait
+		waiting_task.wait
+		
+		expect(waiting_task.status).to be :complete
+		
+		subject.close
 	end
 end
