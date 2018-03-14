@@ -18,39 +18,43 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'generic'
+require_relative 'notification'
 
 module Async
 	module IO
 		# A cross-reactor/process notification pipe.
-		class Notification
-			def initialize
-				pipe = ::IO.pipe
-				
-				@input = pipe.first
-				@output = pipe.last
-				
-				@count = 0
+		class Trap
+			def initialize(name)
+				@name = name
+				@notifications = []
 			end
 			
-			def close
-				@input.close
-				@output.close
+			def install!
+				Signal.trap(@name, &self.method(:trigger))
+				
+				return self
 			end
 			
-			# Wait for signal to be called.
-			# @return [Object]
-			def wait
-				wrapper = Async::IO::Generic.new(@input)
-				wrapper.read(1)
+			# Block the calling task until the signal occurs.
+			def trap
+				notification = Notification.new
+				@notifications << notification
+				
+				while true
+					notification.wait
+					yield
+				end
 			ensure
-				wrapper.send(:close_monitor) if wrapper
+				if notification
+					notification.close
+					@notifications.delete(notification)
+				end
 			end
 			
-			# Signal to a given task that it should resume operations.
+			# Signal all waiting tasks that the trap occurred.
 			# @return [void]
-			def signal
-				@output.write(".")
+			def trigger
+				@notifications.each(&:signal)
 			end
 		end
 	end

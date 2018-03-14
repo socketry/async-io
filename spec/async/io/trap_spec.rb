@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,40 +18,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'generic'
+require 'async/io/trap'
 
-module Async
-	module IO
-		# A cross-reactor/process notification pipe.
-		class Notification
-			def initialize
-				pipe = ::IO.pipe
-				
-				@input = pipe.first
-				@output = pipe.last
-				
-				@count = 0
-			end
-			
-			def close
-				@input.close
-				@output.close
-			end
-			
-			# Wait for signal to be called.
-			# @return [Object]
-			def wait
-				wrapper = Async::IO::Generic.new(@input)
-				wrapper.read(1)
-			ensure
-				wrapper.send(:close_monitor) if wrapper
-			end
-			
-			# Signal to a given task that it should resume operations.
-			# @return [void]
-			def signal
-				@output.write(".")
+RSpec.describe Async::IO::Trap do
+	include_context Async::RSpec::Reactor
+	
+	subject {described_class.new(:USR1)}
+	
+	it "should wait for signal" do
+		trapped = false
+		
+		waiting_task = reactor.async do
+			subject.trap do
+				trapped = true
+				break
 			end
 		end
+		
+		subject.trigger
+		
+		waiting_task.wait
+		
+		expect(trapped).to be_truthy
 	end
 end
