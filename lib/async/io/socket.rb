@@ -33,6 +33,10 @@ module Async
 			
 			wrap_blocking_method :sendmsg, :sendmsg_nonblock
 			wrap_blocking_method :send, :sendmsg_nonblock, invert: false
+			
+			def type
+				self.local_address.socktype
+			end
 		end
 		
 		module ServerSocket
