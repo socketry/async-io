@@ -43,8 +43,6 @@ module Async
 			def wait
 				wrapper = Async::IO::Generic.new(@input)
 				wrapper.read(1)
-			ensure
-				wrapper.send(:close_monitor) if wrapper
 			end
 			
 			# Signal to a given task that it should resume operations.

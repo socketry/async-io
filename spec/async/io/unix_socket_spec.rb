@@ -30,6 +30,10 @@ RSpec.describe Async::Reactor do
 		FileUtils.rm_f path
 	end
 	
+	after do
+		FileUtils.rm_f path
+	end
+	
 	describe 'basic unix socket' do
 		it "should echo data back to peer" do
 			subject.async do
