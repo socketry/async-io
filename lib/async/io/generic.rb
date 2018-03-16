@@ -133,6 +133,7 @@ module Async
 					end
 				end
 			else
+				# This is also correct for Rubinius.
 				def async_send(*args)
 					async do
 						@io.__send__(*args)
