@@ -19,19 +19,67 @@
 # THE SOFTWARE.
 
 require_relative 'socket'
+require_relative 'stream'
 
 module Async
 	module IO
 		# Asynchronous TCP socket wrapper.
 		class TCPSocket < IPSocket
 			wraps ::TCPSocket
+			
+			def initialize(remote_host, remote_port = nil, local_host=nil, local_port=nil)
+				if remote_host.is_a? ::TCPSocket
+					super(remote_host)
+				else
+					remote_address = Addrinfo.tcp(remote_host, remote_port)
+					local_address = Addrinfo.tcp(local_host, local_port) if local_host
+					
+					socket = Socket.connect(remote_address, local_address)
+					
+					super(::TCPSocket.for_fd(socket.fileno))
+				end
+				
+				@buffer = Stream.new(self)
+			end
+			
+			def gets(separator = $/)
+				@buffer.flush
+				
+				@buffer.read_until(separator)
+			end
+			
+			def puts(*args, separator: $/)
+				args.each do |arg|
+					@buffer.write(arg)
+					@buffer.write(separator)
+				end
+			end
+			
+			def flush
+				@buffer.flush
+			end
 		end
 		
 		# Asynchronous TCP server wrappper.
 		class TCPServer < TCPSocket
 			wraps ::TCPServer, :listen
 			
-			include ServerSocket
+			def initialize(*args)
+				if args.first.is_a? ::TCPServer
+					super(args.first)
+				else
+					# We assume this operation doesn't block (for long):
+					super(::TCPServer.new(*args))
+				end
+			end
+			
+			def accept(task: Task.current)
+				peer, address = async_send(:accept_nonblock)
+				
+				wrapper = TCPSocket.new(peer)
+				
+				return wrapper, address
+			end
 		end
 	end
 end
