@@ -24,9 +24,12 @@ require_relative 'generic'
 module Async
 	module IO
 		class Stream
-			def initialize(io, block_size: 1024*8)
+			def initialize(io, block_size: 1024*8, sync: true)
 				@io = io
 				@eof = false
+				
+				# We don't want Ruby to do any IO buffering.
+				@io.sync = sync
 				
 				@block_size = block_size
 				
