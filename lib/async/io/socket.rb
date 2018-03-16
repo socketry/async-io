@@ -45,18 +45,16 @@ module Async
 				
 				wrapper = Socket.new(peer, self.reactor)
 				
-				if block_given?
-					task.async do |task|
-						task.annotate "incoming connection #{address.inspect}"
-						
-						begin
-							yield wrapper, address
-						ensure
-							wrapper.close
-						end
+				return wrapper, address unless block_given?
+				
+				task.async do |task|
+					task.annotate "incoming connection #{address.inspect}"
+					
+					begin
+						yield wrapper, address
+					ensure
+						wrapper.close
 					end
-				else
-					return wrapper, address
 				end
 			end
 			
@@ -124,14 +122,12 @@ module Async
 					raise
 				end
 				
-				if block_given?
-					begin
-						yield wrapper, task
-					ensure
-						wrapper.close
-					end
-				else
-					return wrapper
+				return wrapper unless block_given?
+				
+				begin
+					yield wrapper, task
+				ensure
+					wrapper.close
 				end
 			end
 			
@@ -150,14 +146,12 @@ module Async
 					socket.bind(local_address.to_sockaddr)
 				end
 				
-				if block_given?
-					begin
-						yield wrapper, task
-					ensure
-						wrapper.close
-					end
-				else
-					return wrapper
+				return wrapper unless block_given?
+				
+				begin
+					yield wrapper, task
+				ensure
+					wrapper.close
 				end
 			end
 			

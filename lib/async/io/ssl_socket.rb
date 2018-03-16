@@ -76,22 +76,20 @@ module Async
 				
 				wrapper = SSLSocket.connect_socket(peer, @context)
 				
-				if block_given?
-					task.async do
-						task.annotate "accepting secure connection #{address}"
+				return wrapper, address unless block_given?
+				
+				task.async do
+					task.annotate "accepting secure connection #{address}"
+					
+					begin
+						wrapper.accept
 						
-						begin
-							wrapper.accept
-							
-							yield wrapper, address
-						rescue SSLError
-							Async.logger.error($!.class) {$!}
-						ensure
-							wrapper.close
-						end
+						yield wrapper, address
+					rescue SSLError
+						Async.logger.error($!.class) {$!}
+					ensure
+						wrapper.close
 					end
-				else
-					return wrapper, address
 				end
 			end
 		end

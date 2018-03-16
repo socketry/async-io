@@ -34,17 +34,14 @@ module Async
 			
 			def accept
 				peer = async_send(:accept_nonblock)
+				wrapper = UNIXSocket.new(peer, self.reactor)
 				
-				if block_given?
-					wrapper = UNIXSocket.new(peer, self.reactor)
-					
-					begin
-						yield wrapper
-					ensure
-						wrapper.close
-					end
-				else
-					return UNIXSocket.new(peer, self.reactor)
+				return wrapper unless block_given?
+				
+				begin
+					yield wrapper
+				ensure
+					wrapper.close
 				end
 			end
 		end

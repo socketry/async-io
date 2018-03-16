@@ -69,14 +69,12 @@ module Async
 				def wrap(*args)
 					wrapper = self.new(@wrapped_klass.new(*args))
 					
-					if block_given?
-						begin
-							yield wrapper
-						ensure
-							wrapper.close
-						end
-					else
-						return wrapper
+					return wrapper unless block_given?
+					
+					begin
+						yield wrapper
+					ensure
+						wrapper.close
 					end
 				end
 			end
