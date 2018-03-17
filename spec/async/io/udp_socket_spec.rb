@@ -18,27 +18,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'socket'
+require 'async/io/udp_socket'
 
-module Async
-	module IO
-		# Asynchronous UDP socket wrapper.
-		class UDPSocket < IPSocket
-			wraps ::UDPSocket, :bind
-			
-			def initialize(family)
-				if family.is_a? ::UDPSocket
-					super(family)
-				else
-					super(::UDPSocket.new(family))
-				end
+RSpec.describe Async::IO::UDPSocket do
+	include_context Async::RSpec::Reactor
+	
+	let(:data) {"The quick brown fox jumped over the lazy dog."}
+	
+	describe 'basic udp server' do
+		it "should echo data back to peer" do
+			reactor.async do
+				server = Async::IO::UDPSocket.new(Socket::AF_INET)
+				server.bind("127.0.0.1", 6778)
+				
+				packet, address = server.recvfrom(512)
+				server.send(packet, 0, address[3], address[1])
+				
+				server.close
 			end
 			
-			# We pass `send` through directly, but in theory it might block. Internally, it uses sendto.
-			def_delegators :@io, :send, :connect
-			
-			# This function is so fucked. Why does `UDPSocket#recvfrom` return the remote address as an array, but `Socket#recfrom` return it as an `Addrinfo`? You should prefer `recvmsg`.
-			wrap_blocking_method :recvfrom, :recvfrom_nonblock
+			reactor.async do
+				client = Async::IO::UDPSocket.new(Socket::AF_INET)
+				client.connect("127.0.0.1", 6778)
+				
+				client.send(data, 0)
+				response = client.recv(512)
+				client.close
+				
+				expect(response).to be == data
+			end
 		end
 	end
 end
