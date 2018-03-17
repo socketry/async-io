@@ -77,6 +77,20 @@ module Async
 				@write_buffer.clear
 			end
 
+			def gets(separator = $/)
+				flush
+				
+				read_until(separator)
+			end
+
+			def puts(*args, separator: $/)
+				args.each do |arg|
+					@write_buffer << arg << separator
+				end
+				
+				flush
+			end
+
 			# Closes the stream and flushes any unwritten data.
 			def close
 				flush rescue nil

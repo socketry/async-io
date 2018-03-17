@@ -5,7 +5,7 @@
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# furnished to do so, reactor to the following conditions:
 # 
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
@@ -20,96 +20,34 @@
 
 require 'async/io/tcp_socket'
 
-RSpec.describe Async::Reactor do
-	include_context Async::RSpec::Leaks
+RSpec.describe Async::IO::TCPSocket do
+	include_context Async::RSpec::Reactor
 	
 	# Shared port for localhost network tests.
 	let(:server_address) {Async::IO::Address.tcp("localhost", 6788)}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
-	around(:each) do |example|
-		# Accept a single incoming connection and then finish.
-		subject.async do |task|
-			Async::IO::Socket.bind(server_address) do |server|
-				server.listen(10)
-				
-				server.accept do |peer, address|
-					data = peer.read(512)
-					peer.write(data)
-				end
-			end
-		end
-		
-		result = example.run
-		
-		if result.is_a? Exception
-			result 
-		else
-			subject.run
-		end
-	end
-	
 	describe 'basic tcp server' do
 		it "should start server and send data" do
-			subject.async do
-				Async::IO::Socket.connect(server_address) do |client|
-					client.write(data)
-					expect(client.read(512)).to be == data
-				end
-			end
-		end
-	end
-	
-	describe 'non-blocking tcp connect' do
-		it "should start server and send data" do
-			subject.async do |task|
-				Async::IO::Socket.connect(server_address) do |client|
-					client.write(data)
-					expect(client.read(512)).to be == data
-				end
-			end
-		end
-		
-		it "can connect socket and read/write in a different task" do
-			socket = nil
-			
-			subject.async do |task|
-				socket = Async::IO::Socket.connect(server_address)
+			# Accept a single incoming connection and then finish.
+			server_task = reactor.async do |task|
+				server = Async::IO::TCPServer.new("localhost", 6788)
+				peer, address = server.accept
 				
-				# Stop the reactor once the connection was made.
-				subject.stop
-			end
-		
-			subject.run
-			
-			expect(socket).to_not be_nil
-			expect(socket).to be_kind_of Async::Wrapper
-			
-			subject.async do
-				socket.write(data)
+				data = peer.gets
+				peer.puts(data)
 				
-				expect(socket.read(512)).to be == data
+				peer.close
+				server.close
 			end
 			
-			subject.run
+			client = Async::IO::TCPSocket.new("localhost", 6788)
 			
-			socket.close
-		end
-		
-		it "can't use a socket in nested tasks" do
-			subject.async do |task|
-				socket = Async::IO::Socket.connect(server_address)
-				expect(socket).to be_kind_of Async::Wrapper
-				
-				expect do
-					subject.async do
-						socket.write(data)
-						# expect(socket.read(512)).to be == data
-					end
-				end.to_not raise_error
-				
-				socket.close
-			end
+			client.puts(data)
+			expect(client.gets).to be == data
+			
+			client.close
+			server_task.wait
 		end
 	end
 end

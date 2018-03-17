@@ -20,6 +20,7 @@
 
 require_relative 'socket'
 require_relative 'stream'
+require 'fcntl'
 
 module Async
 	module IO
@@ -27,37 +28,30 @@ module Async
 		class TCPSocket < IPSocket
 			wraps ::TCPSocket
 			
-			def initialize(remote_host, remote_port = nil, local_host=nil, local_port=nil)
+			def initialize(remote_host, remote_port = nil, local_host = nil, local_port = nil)
 				if remote_host.is_a? ::TCPSocket
 					super(remote_host)
 				else
 					remote_address = Addrinfo.tcp(remote_host, remote_port)
 					local_address = Addrinfo.tcp(local_host, local_port) if local_host
 					
+					# We do this unusual dance to avoid leaking an "open" socket instance.
 					socket = Socket.connect(remote_address, local_address)
+					fd = socket.fcntl(Fcntl::F_DUPFD)
+					socket.close
 					
-					super(::TCPSocket.for_fd(socket.fileno))
+					super(::TCPSocket.for_fd(fd))
+					
+					# The equivalent blocking operation. Unfortunately there is no trivial way to make this non-blocking.
+					# super(::TCPSocket.new(remote_host, remote_port, local_host, local_port))
 				end
 				
 				@buffer = Stream.new(self)
 			end
 			
-			def gets(separator = $/)
-				@buffer.flush
-				
-				@buffer.read_until(separator)
-			end
+			attr :buffer
 			
-			def puts(*args, separator: $/)
-				args.each do |arg|
-					@buffer.write(arg)
-					@buffer.write(separator)
-				end
-			end
-			
-			def flush
-				@buffer.flush
-			end
+			def_delegators :@buffer, :gets, :puts, :flush
 		end
 		
 		# Asynchronous TCP server wrappper.

@@ -26,6 +26,14 @@ module Async
 		class UDPSocket < IPSocket
 			wraps ::UDPSocket, :bind
 			
+			def initialize(family)
+				if family.is_a? ::UDPSocket
+					super(family)
+				else
+					super(::UDPSocket.new(family))
+				end
+			end
+			
 			# We pass `send` through directly, but in theory it might block. Internally, it uses sendto.
 			def_delegators :@io, :send
 			
