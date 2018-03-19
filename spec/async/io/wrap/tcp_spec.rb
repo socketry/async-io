@@ -22,18 +22,46 @@ require 'net/http'
 
 require 'async/io/tcp_socket'
 
+# There are different ways to achieve this. This is really just a proof of concept.
+module Wrap
+	module TCPServer
+		def self.new(*args)
+			if Async::Task.current?
+				Async::IO::TCPServer.new(*args)
+			else
+				::TCPServer.new(*args)
+			end
+		end
+	end
+
+	module TCPSocket
+		def self.new(*args)
+			if Async::Task.current?
+				Async::IO::TCPSocket.new(*args)
+			else
+				::TCPSocket.new(*args)
+			end
+		end
+		
+		def self.open(*args)
+			self.new(*args)
+		end
+	end
+end
+
 RSpec.describe Async::IO::TCPSocket do
-	# There are different ways to achieve this. This is really just a proof of concept.
-	let(:http) {Net::HTTP.dup.include(Async::IO)}
-	
 	describe "inside reactor" do
 		include_context Async::RSpec::Reactor
 		
+		before(:all) do
+			Net::HTTP.include(Wrap)
+		end
+		
 		it "should fetch page" do
-			expect(Async::IO::TCPSocket).to receive(:open).and_call_original
+			expect(Async::IO::TCPSocket).to receive(:new).and_call_original
 			
 			expect do
-				http.get_response('www.google.com', '/')
+				Net::HTTP.get_response('www.google.com', '/')
 			end.to_not raise_error
 		end
 	end
