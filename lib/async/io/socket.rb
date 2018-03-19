@@ -50,11 +50,7 @@ module Async
 				task.async do |task|
 					task.annotate "incoming connection #{address.inspect}"
 					
-					begin
-						yield wrapper, address
-					ensure
-						wrapper.close
-					end
+					yield wrapper, address
 				end
 			end
 			
@@ -124,11 +120,7 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				begin
-					yield wrapper, task
-				ensure
-					wrapper.close
-				end
+				yield wrapper, task
 			end
 			
 			# Bind to a local address.
@@ -148,11 +140,7 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				begin
-					yield wrapper, task
-				ensure
-					wrapper.close
-				end
+				yield wrapper, task
 			end
 			
 			# Bind to a local address and accept connections in a loop.

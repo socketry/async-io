@@ -195,6 +195,8 @@ module Async
 					
 					ssl_socket.connect
 					
+					return ssl_socket unless block_given?
+					
 					yield ssl_socket
 				end
 			end
