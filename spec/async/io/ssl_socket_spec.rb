@@ -43,14 +43,14 @@ RSpec.describe Async::Reactor do
 					server.accept do |peer, address|
 						data = peer.read(512)
 						peer.write(data)
-					ensure
+					# ensure # TODO Ruby 2.5+
 						peer.close
 					end
 				rescue OpenSSL::SSL::SSLError
 					# ignore.
 				end
 				
-			ensure
+			# ensure # TODO Ruby 2.5+
 				server.close
 			end
 		end
@@ -73,7 +73,7 @@ RSpec.describe Async::Reactor do
 					client_endpoint.connect do |client|
 						client.write(data)
 						expect(client.read(512)).to be == data
-					ensure
+					# ensure # TODO Ruby 2.5+
 						client.close
 					end
 				end

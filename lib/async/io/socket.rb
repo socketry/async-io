@@ -145,11 +145,13 @@ module Async
 			# Bind to a local address and accept connections in a loop.
 			def self.accept(*args, backlog: SOMAXCONN, &block)
 				bind(*args) do |server, task|
-					server.listen(backlog) if backlog
+					begin # TODO Ruby 2.5+
+						server.listen(backlog) if backlog
 					
-					server.accept_each(task: task, &block)
-				ensure
-					server.close
+						server.accept_each(task: task, &block)
+					ensure
+						server.close
+					end
 				end
 			end
 		end

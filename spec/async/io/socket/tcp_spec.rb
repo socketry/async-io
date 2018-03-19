@@ -36,10 +36,10 @@ RSpec.describe Async::Reactor do
 				server.accept do |peer, address|
 					data = peer.read(512)
 					peer.write(data)
-				ensure
+				# ensure # TODO Ruby 2.5+
 					peer.close
 				end
-			ensure
+			# ensure # TODO Ruby 2.5+
 				server.close
 			end
 		end
@@ -59,7 +59,7 @@ RSpec.describe Async::Reactor do
 				Async::IO::Socket.connect(server_address) do |client|
 					client.write(data)
 					expect(client.read(512)).to be == data
-				ensure
+				# ensure # TODO Ruby 2.5+
 					client.close
 				end
 			end
@@ -72,7 +72,7 @@ RSpec.describe Async::Reactor do
 				Async::IO::Socket.connect(server_address) do |client|
 					client.write(data)
 					expect(client.read(512)).to be == data
-				ensure
+				# ensure # TODO Ruby 2.5+
 					client.close
 				end
 			end
@@ -116,7 +116,7 @@ RSpec.describe Async::Reactor do
 					end
 				end.to_not raise_error
 				
-			ensure
+			# ensure # TODO Ruby 2.5+
 				socket.close
 			end
 		end

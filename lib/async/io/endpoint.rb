@@ -121,10 +121,12 @@ module Async
 				backlog = self.options.fetch(:backlog, Socket::SOMAXCONN)
 				
 				bind do |server|
-					server.listen(backlog)
-					server.accept_each(&block)
-				ensure
-					server.close
+					begin
+						server.listen(backlog)
+						server.accept_each(&block)
+					ensure
+						server.close
+					end
 				end
 			end
 			
