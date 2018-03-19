@@ -23,18 +23,26 @@ require 'net/http'
 require 'async/io/tcp_socket'
 
 RSpec.describe Async::IO::TCPSocket do
-	include_context Async::RSpec::Reactor
+	# There are different ways to achieve this. This is really just a proof of concept.
+	let(:http) {Net::HTTP.dup.include(Async::IO)}
 	
-	before(:all) do
-		# This injects the asynchronous sockets into Net::HTTP.
-		Net::HTTP.send(:include, Async::IO)
+	describe "inside reactor" do
+		include_context Async::RSpec::Reactor
+		
+		it "should fetch page" do
+			expect(Async::IO::TCPSocket).to receive(:open).and_call_original
+			
+			expect do
+				http.get_response('www.google.com', '/')
+			end.to_not raise_error
+		end
 	end
 	
-	it "should fetch page" do
-		expect(Async::IO::TCPSocket).to receive(:open).and_call_original
-		
-		expect do
-			Net::HTTP.get_response('www.google.com', '/')
-		end.to_not raise_error
+	describe "outside reactor" do
+		it "should fetch page" do
+			expect do
+				Net::HTTP.get_response('www.google.com', '/')
+			end.to_not raise_error
+		end
 	end
 end
