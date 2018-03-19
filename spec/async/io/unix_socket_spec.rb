@@ -20,8 +20,8 @@
 
 require 'async/io/unix_socket'
 
-RSpec.describe Async::Reactor do
-	include_context Async::RSpec::Leaks
+RSpec.describe Async::IO::UNIXServer do
+	include_context Async::RSpec::Reactor
 	
 	let(:path) {File.join(__dir__, "unix-socket")}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
@@ -36,7 +36,7 @@ RSpec.describe Async::Reactor do
 	
 	describe 'basic unix socket' do
 		it "should echo data back to peer" do
-			subject.async do
+			reactor.async do
 				Async::IO::UNIXServer.wrap(path) do |server|
 					server.accept do |peer|
 						peer.send(peer.recv(512))
@@ -46,7 +46,7 @@ RSpec.describe Async::Reactor do
 				end
 			end
 			
-			subject.async do
+			reactor.async do
 				Async::IO::UNIXSocket.wrap(path) do |client|
 					client.send(data)
 					response = client.recv(512)
@@ -56,8 +56,6 @@ RSpec.describe Async::Reactor do
 					client.close
 				end
 			end
-			
-			subject.run
 		end
 	end
 end
