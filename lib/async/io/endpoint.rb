@@ -25,9 +25,41 @@ module Async
 	module IO
 		Address = Addrinfo
 		
-		class Endpoint < Struct.new(:specification, :options)
-			include Comparable
+		Endpoints = Struct.new(:ordered) do
+			include Enumerable
 			
+			def each(&block)
+				return to_enum unless block_given?
+				
+				Endpoint.each(self.ordered, &block)
+			end
+			
+			def connect
+				return to_enum(:connect) unless block_given?
+				
+				self.each do |endpoint|
+					endpoint.connect(&block)
+				end
+			end
+			
+			def accept(&block)
+				return to_enum(:accept) unless block_given?
+				
+				self.each do |endpoint|
+					endpoint.accept(&block)
+				end
+			end
+			
+			def bind
+				return to_enum(:bind) unless block_given?
+				
+				self.each do |endpoint|
+					endpoint.bind(&block)
+				end
+			end
+		end
+		
+		class Endpoint < Struct.new(:specification, :options)
 			class << self
 				def parse(string, **options)
 					uri = URI.parse(string)
@@ -55,7 +87,7 @@ module Async
 					SecureEndpoint.new(self.tcp(*args, **options), **options)
 				end
 				
-				# Generate a list of endpoints from an array.
+				# Generate a list of endpoint from an array.
 				def each(specifications, &block)
 					return to_enum(:each, specifications) unless block_given?
 					
@@ -91,6 +123,8 @@ module Async
 				bind do |server|
 					server.listen(backlog)
 					server.accept_each(&block)
+				ensure
+					server.close
 				end
 			end
 			
@@ -101,6 +135,8 @@ module Async
 		
 		class HostEndpoint < Endpoint
 			def bind(&block)
+				return to_enum(:bind) unless block_given?
+				
 				task = Task.current
 				tasks = []
 				
@@ -116,27 +152,25 @@ module Async
 			end
 			
 			def connect(&block)
-				last_error = nil
+				return to_enum(:connect) unless block_given?
 				
 				Addrinfo.foreach(*specification).each do |address|
-					begin
-						return Socket.connect(address, &block)
-					rescue
-						last_error = $!
-					end
+					Socket.connect(address, &block)
 				end
-				
-				raise last_error
 			end
 		end
 		
 		# This class will open and close the socket automatically.
 		class AddressEndpoint < Endpoint
 			def bind(&block)
+				return to_enum(:bind) unless block_given?
+				
 				Socket.bind(specification, **options, &block)
 			end
 			
 			def connect(&block)
+				return to_enum(:connect) unless block_given?
+				
 				Socket.connect(specification, &block)
 			end
 		end
@@ -144,10 +178,14 @@ module Async
 		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
 		class SocketEndpoint < Endpoint
 			def bind(&block)
+				return to_enum(:bind) unless block_given?
+				
 				yield Socket.new(specification)
 			end
 			
 			def connect(&block)
+				return to_enum(:connect) unless block_given?
+				
 				yield Async::IO.try_convert(specification)
 			end
 		end
@@ -179,23 +217,31 @@ module Async
 			end
 			
 			def bind(&block)
+				return to_enum(:bind) unless block_given?
+				
 				specification.bind do |server|
 					yield SSLServer.new(server, context)
 				end
 			end
 			
 			def connect(&block)
+				return to_enum(:connect) unless block_given?
+				
 				specification.connect do |socket|
-					ssl_socket = SSLSocket.connect_socket(socket, context)
+					ssl_socket = SSLSocket.wrap(socket, context)
 					
 					# Used for SNI:
 					if hostname = self.hostname
 						ssl_socket.hostname = hostname
 					end
 					
-					ssl_socket.connect
-					
-					return ssl_socket unless block_given?
+					begin
+						ssl_socket.connect
+					rescue
+						# If the connection fails (e.g. certificates are invalid), the caller never sees the socket, so we close it and raise the exception up the chain.
+						ssl_socket.close
+						raise
+					end
 					
 					yield ssl_socket
 				end

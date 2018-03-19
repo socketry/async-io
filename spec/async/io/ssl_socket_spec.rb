@@ -39,10 +39,19 @@ RSpec.describe Async::Reactor do
 			server_endpoint.bind do |server|
 				server.listen(10)
 				
-				server.accept do |peer, address|
-					data = peer.read(512)
-					peer.write(data)
-				end rescue nil
+				begin
+					server.accept do |peer, address|
+						data = peer.read(512)
+						peer.write(data)
+					ensure
+						peer.close
+					end
+				rescue OpenSSL::SSL::SSLError
+					# ignore.
+				end
+				
+			ensure
+				server.close
 			end
 		end
 		
@@ -64,6 +73,8 @@ RSpec.describe Async::Reactor do
 					client_endpoint.connect do |client|
 						client.write(data)
 						expect(client.read(512)).to be == data
+					ensure
+						client.close
 					end
 				end
 			end
@@ -75,7 +86,7 @@ RSpec.describe Async::Reactor do
 			it "should fail to connect" do
 				subject.async do
 					expect do
-						client_endpoint.connect
+						client_endpoint.connect {|peer| peer.close}
 					end.to raise_error(OpenSSL::SSL::SSLError)
 				end
 			end

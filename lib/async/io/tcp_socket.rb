@@ -49,6 +49,10 @@ module Async
 				@buffer = Stream.new(self)
 			end
 			
+			class << self
+				alias open new
+			end
+			
 			attr :buffer
 			
 			def_delegators :@buffer, :gets, :puts, :flush

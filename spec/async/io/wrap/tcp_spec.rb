@@ -20,18 +20,18 @@
 
 require 'net/http'
 
-require 'async/io/wrap/tcp'
+require 'async/io/tcp_socket'
 
-RSpec.describe Async::IO::Wrap::TCPSocket do
+RSpec.describe Async::IO::TCPSocket do
 	include_context Async::RSpec::Reactor
 	
 	before(:all) do
 		# This injects the asynchronous sockets into Net::HTTP.
-		Net::HTTP.send(:include, Async::IO::Wrap)
+		Net::HTTP.send(:include, Async::IO)
 	end
 	
 	it "should fetch page" do
-		expect(Async::IO::Wrap::TCPSocket).to receive(:new).and_call_original
+		expect(Async::IO::TCPSocket).to receive(:open).and_call_original
 		
 		expect do
 			Net::HTTP.get_response('www.google.com', '/')

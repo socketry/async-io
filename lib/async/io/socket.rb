@@ -42,8 +42,7 @@ module Async
 		module ServerSocket
 			def accept(task: Task.current)
 				peer, address = async_send(:accept_nonblock)
-				
-				wrapper = Socket.new(peer, self.reactor)
+				wrapper = Socket.new(peer, task.reactor)
 				
 				return wrapper, address unless block_given?
 				
@@ -149,6 +148,8 @@ module Async
 					server.listen(backlog) if backlog
 					
 					server.accept_each(task: task, &block)
+				ensure
+					server.close
 				end
 			end
 		end

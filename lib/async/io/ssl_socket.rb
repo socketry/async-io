@@ -28,7 +28,7 @@ module Async
 		
 		# Asynchronous TCP socket wrapper.
 		class SSLSocket < Generic
-			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :session, :session=, :session_reused?, :ssl_version, :state
+			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :close, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :session, :session=, :session_reused?, :ssl_version, :state
 			
 			wrap_blocking_method :accept, :accept_nonblock
 			wrap_blocking_method :connect, :connect_nonblock
@@ -41,9 +41,8 @@ module Async
 				@io.to_io.remote_address
 			end
 			
-			# This method/implementation might change in the future, don't depend on it :)
-			def self.connect_socket(socket, context)
-				io = wrapped_klass.new(socket.to_io, context)
+			def self.wrap(socket, context)
+				io = @wrapped_klass.new(socket.to_io, context)
 				
 				# This ensures that when the internal IO is closed, it also closes the internal socket:
 				io.sync_close = true
@@ -60,7 +59,7 @@ module Async
 				@context = context
 			end
 			
-			def_delegators :@server, :local_address, :setsockopt, :getsockopt
+			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close
 			
 			attr :server
 			attr :context
@@ -74,7 +73,7 @@ module Async
 			def accept(task: Task.current)
 				peer, address = @server.accept
 				
-				wrapper = SSLSocket.connect_socket(peer, @context)
+				wrapper = SSLSocket.wrap(peer, @context)
 				
 				return wrapper, address unless block_given?
 				

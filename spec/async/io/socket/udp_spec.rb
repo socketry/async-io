@@ -34,6 +34,8 @@ RSpec.describe Async::Reactor do
 					packet, address = server.recvfrom(512)
 					
 					server.send(packet, 0, address)
+				ensure
+					server.close
 				end
 			end
 			
@@ -43,6 +45,8 @@ RSpec.describe Async::Reactor do
 					response = client.recv(512)
 					
 					expect(response).to be == data
+				ensure
+					client.close
 				end
 			end
 			
@@ -55,6 +59,8 @@ RSpec.describe Async::Reactor do
 					packet, address = server.recvfrom(512)
 					
 					server.send(packet, 0, address)
+				ensure
+					server.close
 				end
 			end
 			
@@ -64,6 +70,8 @@ RSpec.describe Async::Reactor do
 					response, address = client.recvfrom(512)
 					
 					expect(response).to be == data
+				ensure
+					client.close
 				end
 			end
 			

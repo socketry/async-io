@@ -40,6 +40,8 @@ RSpec.describe Async::Reactor do
 				Async::IO::UNIXServer.wrap(path) do |server|
 					server.accept do |peer|
 						peer.send(peer.recv(512))
+					ensure
+						peer.close
 					end
 				end
 			end
@@ -50,6 +52,8 @@ RSpec.describe Async::Reactor do
 					response = client.recv(512)
 				
 					expect(response).to be == data
+				ensure
+					client.close
 				end
 			end
 			

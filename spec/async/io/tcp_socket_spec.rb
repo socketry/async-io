@@ -32,12 +32,13 @@ RSpec.describe Async::IO::TCPSocket do
 			# Accept a single incoming connection and then finish.
 			server_task = reactor.async do |task|
 				server = Async::IO::TCPServer.new("localhost", 6788)
+				
 				peer, address = server.accept
 				
 				data = peer.gets
 				peer.puts(data)
-				
-				peer.close
+			ensure
+				peer.close if peer
 				server.close
 			end
 			
