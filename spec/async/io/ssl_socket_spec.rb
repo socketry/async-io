@@ -22,8 +22,8 @@ require 'async/io/ssl_socket'
 
 require 'async/rspec/ssl'
 
-RSpec.describe Async::Reactor do
-	include_context Async::RSpec::Leaks
+RSpec.describe Async::IO::SSLSocket do
+	include_context Async::RSpec::Reactor
 	include_context Async::RSpec::SSL::VerifiedContexts
 	
 	# Shared port for localhost network tests.
@@ -33,9 +33,9 @@ RSpec.describe Async::Reactor do
 	
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
-	around(:each) do |example|
+	let(:server_task) {
 		# Accept a single incoming connection and then finish.
-		subject.async do |task|
+		reactor.async do |task|
 			server_endpoint.bind do |server|
 				server.listen(10)
 				
@@ -54,22 +54,16 @@ RSpec.describe Async::Reactor do
 				server.close
 			end
 		end
-		
-		result = example.run
-		
-		if result.is_a? Exception
-			result 
-		else
-			subject.run
-		end
-	end
+	}
 	
 	describe "#connect" do
 		context "with a trusted certificate" do
 			include_context Async::RSpec::SSL::ValidCertificate
 			
 			it "should start server and send data" do
-				subject.async do
+				server_task
+				
+				reactor.async do
 					client_endpoint.connect do |client|
 						client.write(data)
 						expect(client.read(512)).to be == data
@@ -84,7 +78,9 @@ RSpec.describe Async::Reactor do
 			include_context Async::RSpec::SSL::InvalidCertificate
 			
 			it "should fail to connect" do
-				subject.async do
+				server_task
+				
+				reactor.async do
 					expect do
 						client_endpoint.connect {|peer| peer.close}
 					end.to raise_error(OpenSSL::SSL::SSLError)
