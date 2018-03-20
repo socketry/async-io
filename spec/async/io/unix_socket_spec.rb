@@ -43,6 +43,9 @@ RSpec.describe Async::IO::UNIXServer do
 					# ensure # TODO Ruby 2.5+
 						peer.close
 					end
+					
+					# ensure # TODO Ruby 2.5+
+					server.close
 				end
 			end
 			

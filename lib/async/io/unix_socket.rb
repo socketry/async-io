@@ -38,11 +38,7 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				begin
-					yield wrapper
-				ensure
-					wrapper.close
-				end
+				yield wrapper
 			end
 		end
 	end
