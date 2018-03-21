@@ -20,8 +20,16 @@
 
 require 'async/io/socket'
 
+require_relative 'generic_examples'
+
+RSpec.describe Async::IO::BasicSocket do
+	it_should_behave_like Async::IO::Generic
+end
+
 RSpec.describe Async::IO::Socket do
 	include_context Async::RSpec::Reactor
+	
+	it_should_behave_like Async::IO::Generic
 	
 	describe '#connect' do
 		let(:address) {Async::IO::Address.tcp('127.0.0.1', 12345)}
@@ -42,4 +50,8 @@ RSpec.describe Async::IO::Socket do
 			end.to raise_error(Errno::EACCES)
 		end
 	end
+end
+
+RSpec.describe Async::IO::IPSocket do
+	it_should_behave_like Async::IO::Generic, [:inspect]
 end

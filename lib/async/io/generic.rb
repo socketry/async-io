@@ -80,10 +80,12 @@ module Async
 			# @example
 			#   data = io.read(512)
 			wrap_blocking_method :read, :read_nonblock
+			alias sysread read
 			
 			# @example
 			#   io.write("Hello World")
 			wrap_blocking_method :write, :write_nonblock
+			alias syswrite write
 			
 			protected
 			

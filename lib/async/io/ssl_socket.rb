@@ -28,10 +28,15 @@ module Async
 		
 		# Asynchronous TCP socket wrapper.
 		class SSLSocket < Generic
-			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :close, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :session, :session=, :session_reused?, :ssl_version, :state
+			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :close, :context, :hostname, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :session, :session=, :session_reused?, :ssl_version, :state, :sync_close, :sync_close=, :sysclose, :verify_result, :tmp_key
 			
 			wrap_blocking_method :accept, :accept_nonblock
 			wrap_blocking_method :connect, :connect_nonblock
+			
+			alias syswrite write
+			alias sysread read
+			
+			# It's hard to know what #to_io / #io should do. So, they are omitted.
 			
 			def local_address
 				@io.to_io.local_address
@@ -63,8 +68,6 @@ module Async
 			
 			attr :server
 			attr :context
-			
-			include ServerSocket
 			
 			def listen(*args)
 				@server.listen(*args)

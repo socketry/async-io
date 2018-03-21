@@ -30,7 +30,7 @@ module Async
 		end
 		
 		class UNIXServer < UNIXSocket
-			wraps ::UNIXServer
+			wraps ::UNIXServer, :listen
 			
 			def accept
 				peer = async_send(:accept_nonblock)
@@ -40,6 +40,9 @@ module Async
 				
 				yield wrapper
 			end
+			
+			alias sysaccept accept
+			alias accept_nonblock accept
 		end
 	end
 end

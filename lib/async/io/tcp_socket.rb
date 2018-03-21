@@ -78,6 +78,9 @@ module Async
 				
 				return wrapper, address
 			end
+			
+			alias accept_nonblock accept
+			alias sysaccept accept
 		end
 	end
 end

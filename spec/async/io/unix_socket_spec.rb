@@ -20,8 +20,12 @@
 
 require 'async/io/unix_socket'
 
+require_relative 'generic_examples'
+
 RSpec.describe Async::IO::UNIXServer do
 	include_context Async::RSpec::Reactor
+	
+	it_should_behave_like Async::IO::Generic
 	
 	let(:path) {File.join(__dir__, "unix-socket")}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
@@ -34,30 +38,28 @@ RSpec.describe Async::IO::UNIXServer do
 		FileUtils.rm_f path
 	end
 	
-	describe 'basic unix socket' do
-		it "should echo data back to peer" do
-			reactor.async do
-				Async::IO::UNIXServer.wrap(path) do |server|
-					server.accept do |peer|
-						peer.send(peer.recv(512))
-					# ensure # TODO Ruby 2.5+
-						peer.close
-					end
-					
-					# ensure # TODO Ruby 2.5+
-					server.close
-				end
-			end
-			
-			reactor.async do
-				Async::IO::UNIXSocket.wrap(path) do |client|
-					client.send(data)
-					response = client.recv(512)
-				
-					expect(response).to be == data
+	it "should echo data back to peer" do
+		reactor.async do
+			Async::IO::UNIXServer.wrap(path) do |server|
+				server.accept do |peer|
+					peer.send(peer.recv(512))
 				# ensure # TODO Ruby 2.5+
-					client.close
+					peer.close
 				end
+				
+				# ensure # TODO Ruby 2.5+
+				server.close
+			end
+		end
+		
+		reactor.async do
+			Async::IO::UNIXSocket.wrap(path) do |client|
+				client.send(data)
+				response = client.recv(512)
+			
+				expect(response).to be == data
+			# ensure # TODO Ruby 2.5+
+				client.close
 			end
 		end
 	end

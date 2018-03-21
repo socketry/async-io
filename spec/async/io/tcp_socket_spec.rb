@@ -20,14 +20,20 @@
 
 require 'async/io/tcp_socket'
 
+require_relative 'generic_examples'
+
 RSpec.describe Async::IO::TCPSocket do
 	include_context Async::RSpec::Reactor
+	
+	it_should_behave_like Async::IO::Generic
 	
 	# Shared port for localhost network tests.
 	let(:server_address) {Async::IO::Address.tcp("localhost", 6788)}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
-	describe 'basic tcp server' do
+	describe Async::IO::TCPServer do
+		it_should_behave_like Async::IO::Generic
+		
 		it "should start server and send data" do
 			# Accept a single incoming connection and then finish.
 			server_task = reactor.async do |task|

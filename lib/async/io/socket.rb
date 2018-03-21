@@ -24,12 +24,10 @@ require_relative 'generic'
 module Async
 	module IO
 		class BasicSocket < Generic
-			wraps ::BasicSocket, :setsockopt, :connect_address, :local_address, :remote_address, :do_not_reverse_lookup, :do_not_reverse_lookup=, :shutdown, :getsockopt, :getsockname, :getpeername, :getpeereid
+			wraps ::BasicSocket, :setsockopt, :connect_address, :close_read, :close_write, :local_address, :remote_address, :do_not_reverse_lookup, :do_not_reverse_lookup=, :shutdown, :getsockopt, :getsockname, :getpeername, :getpeereid
 			
 			wrap_blocking_method :recv, :recv_nonblock
 			wrap_blocking_method :recvmsg, :recvmsg_nonblock
-			
-			wrap_blocking_method :recvfrom, :recvfrom_nonblock
 			
 			wrap_blocking_method :sendmsg, :sendmsg_nonblock
 			wrap_blocking_method :send, :sendmsg_nonblock, invert: false
@@ -39,7 +37,23 @@ module Async
 			end
 		end
 		
-		module ServerSocket
+		class Socket < BasicSocket
+			wraps ::Socket, :bind, :ipv6only!, :listen
+			
+			wrap_blocking_method :recvfrom, :recvfrom_nonblock
+			
+			include ::Socket::Constants
+			
+			def connect(*args)
+				begin
+					async_send(:connect_nonblock, *args)
+				rescue Errno::EISCONN
+					# We are now connected.
+				end
+			end
+			
+			alias connect_nonblock connect
+			
 			def accept(task: Task.current)
 				peer, address = async_send(:accept_nonblock)
 				wrapper = Socket.new(peer, task.reactor)
@@ -53,6 +67,9 @@ module Async
 				end
 			end
 			
+			alias accept_nonblock accept
+			alias sysaccept accept
+			
 			def accept_each(task: Task.current)
 				task.annotate "accepting connections #{self.local_address.inspect}"
 				
@@ -60,21 +77,6 @@ module Async
 					self.accept(task: task) do |io, address|
 						yield io, address
 					end
-				end
-			end
-		end
-		
-		class Socket < BasicSocket
-			wraps ::Socket, :bind, :ipv6only!, :listen
-			
-			include ::Socket::Constants
-			include ServerSocket
-			
-			def connect(*args)
-				begin
-					async_send(:connect_nonblock, *args)
-				rescue Errno::EISCONN
-					# We are now connected.
 				end
 			end
 			
@@ -158,6 +160,8 @@ module Async
 		
 		class IPSocket < BasicSocket
 			wraps ::IPSocket, :addr, :peeraddr
+			
+			wrap_blocking_method :recvfrom, :recvfrom_nonblock
 		end
 	end
 end

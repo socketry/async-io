@@ -20,8 +20,12 @@
 
 require 'async/io'
 
+require_relative 'generic_examples'
+
 RSpec.describe Async::IO::Generic do
 	include_context Async::RSpec::Reactor
+	
+	# it_should_behave_like Async::IO::Generic
 	
 	let(:pipe) {IO.pipe}
 	let(:input) {Async::IO::Generic.new(pipe.first)}
