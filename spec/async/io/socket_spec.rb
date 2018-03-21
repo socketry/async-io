@@ -23,7 +23,7 @@ require 'async/io/socket'
 require_relative 'generic_examples'
 
 RSpec.describe Async::IO::BasicSocket do
-	it_should_behave_like Async::IO::Generic
+	it_should_behave_like Async::IO::Generic, [:read_nonblock, :write_nonblock]
 end
 
 RSpec.describe Async::IO::Socket do
