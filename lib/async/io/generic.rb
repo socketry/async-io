@@ -75,17 +75,39 @@ module Async
 				end
 			end
 			
-			wraps ::IO, :external_encoding, :internal_encoding, :autoclose?, :autoclose=, :pid, :stat, :binmode, :flush, :set_encoding, :to_io, :to_i, :reopen, :fileno, :fsync, :fdatasync, :sync, :sync=, :tell, :seek, :rewind, :pos, :pos=, :eof, :eof?, :close_on_exec?, :close_on_exec=, :closed?, :close_read, :close_write, :isatty, :tty?, :binmode?, :sysseek, :advise, :ioctl, :fcntl
+			wraps ::IO, :external_encoding, :internal_encoding, :autoclose?, :autoclose=, :pid, :stat, :binmode, :flush, :set_encoding, :to_io, :to_i, :reopen, :fileno, :fsync, :fdatasync, :sync, :sync=, :tell, :seek, :rewind, :pos, :pos=, :eof, :eof?, :close_on_exec?, :close_on_exec=, :closed?, :close_read, :close_write, :isatty, :tty?, :binmode?, :sysseek, :advise, :ioctl, :fcntl, :nread, :ready?, :pread, :pwrite, :pathconf
 			
 			# @example
 			#   data = io.read(512)
 			wrap_blocking_method :read, :read_nonblock
 			alias sysread read
+			alias readpartial read
 			
 			# @example
 			#   io.write("Hello World")
 			wrap_blocking_method :write, :write_nonblock
 			alias syswrite write
+			alias << write
+			
+			def wait(timeout = nil, mode = :read)
+				case mode
+				when :read
+					wait_readable(timeout)
+				when :write
+					wait_writable(timeout)
+				else
+					wait_any(:rw, timeout)
+				end
+			end
+			
+			def nonblock
+				true
+			end
+			alias nonblock= nonblock
+			
+			def nonblock?
+				true
+			end
 			
 			protected
 			

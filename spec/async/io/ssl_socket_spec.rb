@@ -27,7 +27,7 @@ RSpec.describe Async::IO::SSLSocket do
 	include_context Async::RSpec::Reactor
 	include_context Async::RSpec::SSL::VerifiedContexts
 	
-	it_should_behave_like Async::IO::Generic, [:sync_close, :to_io, :io]
+	it_should_behave_like Async::IO::Generic
 	
 	# Shared port for localhost network tests.
 	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true)}

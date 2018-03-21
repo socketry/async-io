@@ -1,7 +1,7 @@
 
 RSpec.shared_examples Async::IO::Generic do |ignore_methods|
 	let(:instance_methods) {described_class.wrapped_klass.instance_methods(false) - (ignore_methods || [])}
-	let(:wrapped_instance_methods) {described_class.instance_methods(false)}
+	let(:wrapped_instance_methods) {described_class.instance_methods}
 	
 	it "should wrap a class" do
 		expect(described_class.wrapped_klass).to_not be_nil

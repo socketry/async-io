@@ -25,7 +25,9 @@ require_relative 'generic_examples'
 RSpec.describe Async::IO::Generic do
 	include_context Async::RSpec::Reactor
 	
-	# it_should_behave_like Async::IO::Generic
+	it_should_behave_like Async::IO::Generic, [
+		:bytes, :chars, :codepoints, :each, :each_byte, :each_char, :each_codepoint, :each_line, :getbyte, :getc, :gets, :lineno, :lineno=, :lines, :print, :printf, :putc, :puts, :readbyte, :readchar, :readline, :readlines, :ungetbyte, :ungetc
+	]
 	
 	let(:pipe) {IO.pipe}
 	let(:input) {Async::IO::Generic.new(pipe.first)}
