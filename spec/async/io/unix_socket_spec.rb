@@ -22,7 +22,7 @@ require 'async/io/unix_socket'
 
 require_relative 'generic_examples'
 
-RSpec.describe Async::IO::UNIXServer do
+RSpec.describe Async::IO::UNIXSocket do
 	include_context Async::RSpec::Reactor
 	
 	it_should_behave_like Async::IO::Generic
@@ -63,4 +63,8 @@ RSpec.describe Async::IO::UNIXServer do
 			end
 		end
 	end
+end
+
+RSpec.describe Async::IO::UNIXServer do
+	it_should_behave_like Async::IO::Generic
 end

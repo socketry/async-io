@@ -23,10 +23,8 @@ require_relative 'socket'
 module Async
 	module IO
 		class UNIXSocket < BasicSocket
-			wraps ::UNIXSocket, :path, :addr, :peeraddr
-			
-			# TODO Currently unimplemented.
-			# , :send_io, :recv_io
+			# `send_io`, `recv_io` and `recvfrom` may block but no non-blocking implementation available.
+			wraps ::UNIXSocket, :path, :addr, :peeraddr, :send_io, :recv_io, :recvfrom
 		end
 		
 		class UNIXServer < UNIXSocket
