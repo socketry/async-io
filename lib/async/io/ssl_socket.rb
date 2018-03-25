@@ -84,6 +84,7 @@ module Async
 					task.annotate "accepting secure connection #{address}"
 					
 					begin
+						# You want to do this in a nested async task or you might suffer from head-of-line blocking.
 						wrapper.accept
 						
 						yield wrapper, address
@@ -94,6 +95,8 @@ module Async
 					end
 				end
 			end
+			
+			include Server
 		end
 	end
 end

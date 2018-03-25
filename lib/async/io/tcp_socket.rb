@@ -81,6 +81,8 @@ module Async
 			
 			alias accept_nonblock accept
 			alias sysaccept accept
+			
+			include Server
 		end
 	end
 end

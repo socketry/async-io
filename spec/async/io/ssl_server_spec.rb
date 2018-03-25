@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,72 +23,46 @@ require 'async/io/ssl_socket'
 require 'async/rspec/ssl'
 require_relative 'generic_examples'
 
-RSpec.describe Async::IO::SSLSocket do
+RSpec.describe Async::IO::SSLServer do
 	include_context Async::RSpec::Reactor
 	include_context Async::RSpec::SSL::VerifiedContexts
+	include_context Async::RSpec::SSL::ValidCertificate
 	
-	it_should_behave_like Async::IO::Generic
-	
-	# Shared port for localhost network tests.
-	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true)}
+	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6780, reuse_port: true)}
 	let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
 	let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
 	
-	let(:data) {"The quick brown fox jumped over the lazy dog."}
+	let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
 	
-	let(:server_task) do
+	it 'can accept_each connections' do
 		# Accept a single incoming connection and then finish.
-		reactor.async do |task|
+		server_task = reactor.async do |task|
 			server_endpoint.bind do |server|
-				server.listen(10)
-				
 				begin
-					server.accept do |peer, address|
+					server.listen(10)
+					
+					server.accept_each do |peer, address|
 						data = peer.read(512)
 						peer.write(data)
 						
 						peer.close
 					end
-				rescue OpenSSL::SSL::SSLError
-					# ignore.
-				end
-				
-				server.close
-			end
-		end
-	end
-	
-	describe "#connect" do
-		context "with a trusted certificate" do
-			include_context Async::RSpec::SSL::ValidCertificate
-			
-			it "should start server and send data" do
-				server_task
-				
-				reactor.async do
-					client_endpoint.connect do |client|
-						client.write(data)
-						
-						expect(client.read(512)).to be == data
-						
-						client.close
-					end
+				ensure
+					server.close
 				end
 			end
 		end
-
-		context "with an untrusted certificate" do
-			include_context Async::RSpec::SSL::InvalidCertificate
-			
-			it "should fail to connect" do
-				server_task
+		
+		reactor.async do
+			client_endpoint.connect do |client|
+				client.write(data)
 				
-				reactor.async do
-					expect do
-						client_endpoint.connect {|peer| peer.close}
-					end.to raise_error(OpenSSL::SSL::SSLError)
-				end
+				expect(client.read(512)).to be == data
+				
+				client.close
 			end
+			
+			server_task.stop
 		end
 	end
 end

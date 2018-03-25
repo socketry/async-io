@@ -37,6 +37,18 @@ module Async
 			end
 		end
 		
+		module Server
+			def accept_each(task: Task.current)
+				task.annotate "accepting connections #{self.local_address.inspect}"
+				
+				while true
+					self.accept(task: task) do |io, address|
+						yield io, address
+					end
+				end
+			end
+		end
+		
 		class Socket < BasicSocket
 			wraps ::Socket, :bind, :ipv6only!, :listen
 			
@@ -69,16 +81,6 @@ module Async
 			
 			alias accept_nonblock accept
 			alias sysaccept accept
-			
-			def accept_each(task: Task.current)
-				task.annotate "accepting connections #{self.local_address.inspect}"
-				
-				while true
-					self.accept(task: task) do |io, address|
-						yield io, address
-					end
-				end
-			end
 			
 			def self.build(*args, task: Task.current)
 				socket = wrapped_klass.new(*args)
@@ -156,6 +158,8 @@ module Async
 					end
 				end
 			end
+			
+			include Server
 			
 			def self.pair(*args)
 				::Socket.pair(*args).map(&self.method(:new))
