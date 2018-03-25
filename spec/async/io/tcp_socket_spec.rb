@@ -43,8 +43,8 @@ RSpec.describe Async::IO::TCPSocket do
 				
 				data = peer.gets
 				peer.puts(data)
-			# ensure # TODO Ruby 2.5+
-				peer.close if peer
+				
+				peer.close
 				server.close
 			end
 			

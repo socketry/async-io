@@ -50,6 +50,20 @@ RSpec.describe Async::IO::Socket do
 			end.to raise_error(Errno::EACCES)
 		end
 	end
+	
+	describe '.pair' do
+		subject{described_class.pair(:UNIX, :STREAM, 0)}
+		
+		it "should be able to send and recv" do
+			s1, s2 = *subject
+			
+			s1.send "Hello World", 0
+			s1.close
+			
+			expect(s2.recv(32)).to be == "Hello World"
+			s2.close
+		end
+	end
 end
 
 RSpec.describe Async::IO::IPSocket do

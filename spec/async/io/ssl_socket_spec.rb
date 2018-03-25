@@ -46,14 +46,13 @@ RSpec.describe Async::IO::SSLSocket do
 					server.accept do |peer, address|
 						data = peer.read(512)
 						peer.write(data)
-					# ensure # TODO Ruby 2.5+
+						
 						peer.close
 					end
 				rescue OpenSSL::SSL::SSLError
 					# ignore.
 				end
 				
-			# ensure # TODO Ruby 2.5+
 				server.close
 			end
 		end
@@ -69,8 +68,9 @@ RSpec.describe Async::IO::SSLSocket do
 				reactor.async do
 					client_endpoint.connect do |client|
 						client.write(data)
+						
 						expect(client.read(512)).to be == data
-					# ensure # TODO Ruby 2.5+
+						
 						client.close
 					end
 				end

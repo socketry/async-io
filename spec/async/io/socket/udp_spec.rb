@@ -33,7 +33,6 @@ RSpec.describe Async::IO::Socket do
 				packet, address = server.recvfrom(512)
 				
 				server.send(packet, 0, address)
-			# ensure # TODO Ruby 2.5+
 				server.close
 			end
 		end
@@ -47,7 +46,7 @@ RSpec.describe Async::IO::Socket do
 					response = client.recv(512)
 					
 					expect(response).to be == data
-				# ensure # TODO Ruby 2.5+
+					
 					client.close
 				end
 			end
@@ -60,7 +59,7 @@ RSpec.describe Async::IO::Socket do
 					response, address = client.recvfrom(512)
 					
 					expect(response).to be == data
-				# ensure # TODO Ruby 2.5+
+					
 					client.close
 				end
 			end

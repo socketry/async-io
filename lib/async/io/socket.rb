@@ -156,6 +156,10 @@ module Async
 					end
 				end
 			end
+			
+			def self.pair(*args)
+				::Socket.pair(*args).map(&self.method(:new))
+			end
 		end
 		
 		class IPSocket < BasicSocket

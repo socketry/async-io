@@ -43,11 +43,8 @@ RSpec.describe Async::IO::UNIXSocket do
 			Async::IO::UNIXServer.wrap(path) do |server|
 				server.accept do |peer|
 					peer.send(peer.recv(512))
-				# ensure # TODO Ruby 2.5+
 					peer.close
 				end
-				
-				# ensure # TODO Ruby 2.5+
 				server.close
 			end
 		end
@@ -58,7 +55,7 @@ RSpec.describe Async::IO::UNIXSocket do
 				response = client.recv(512)
 			
 				expect(response).to be == data
-			# ensure # TODO Ruby 2.5+
+				
 				client.close
 			end
 		end
