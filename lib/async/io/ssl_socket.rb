@@ -56,6 +56,7 @@ module Async
 			end
 		end
 		
+		# We reimplement this from scratch because the native implementation doesn't expose the underlying server/context that we need to implement non-blocking accept.
 		class SSLServer
 			extend Forwardable
 			
