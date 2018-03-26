@@ -38,17 +38,11 @@ RSpec.describe Async::IO::SSLServer do
 		# Accept a single incoming connection and then finish.
 		server_task = reactor.async do |task|
 			server_endpoint.bind do |server|
-				begin
-					server.listen(10)
-					
-					server.accept_each do |peer, address|
-						data = peer.read(512)
-						peer.write(data)
-						
-						peer.close
-					end
-				ensure
-					server.close
+				server.listen(10)
+				
+				server.accept_each do |peer, address|
+					data = peer.read(512)
+					peer.write(data)
 				end
 			end
 		end
@@ -58,8 +52,6 @@ RSpec.describe Async::IO::SSLServer do
 				client.write(data)
 				
 				expect(client.read(512)).to be == data
-				
-				client.close
 			end
 			
 			server_task.stop

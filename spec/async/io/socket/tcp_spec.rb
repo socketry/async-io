@@ -36,11 +36,7 @@ RSpec.describe Async::IO::Socket do
 				server.accept do |peer, address|
 					data = peer.read(512)
 					peer.write(data)
-					
-					peer.close
 				end
-				
-				server.close
 			end
 		end
 	end
@@ -52,8 +48,6 @@ RSpec.describe Async::IO::Socket do
 					client.write(data)
 					
 					expect(client.read(512)).to be == data
-					
-					client.close
 				end
 			end
 		end
@@ -66,8 +60,6 @@ RSpec.describe Async::IO::Socket do
 					client.write(data)
 					
 					expect(client.read(512)).to be == data
-					
-					client.close
 				end
 			end
 		end
@@ -86,22 +78,6 @@ RSpec.describe Async::IO::Socket do
 					
 					socket.close
 				end
-			end
-		end
-		
-		it "can't use a socket in nested tasks" do
-			reactor.async do |task|
-				socket = Async::IO::Socket.connect(server_address)
-				expect(socket).to be_kind_of Async::Wrapper
-				
-				expect do
-					reactor.async do
-						socket.write(data)
-						# expect(socket.read(512)).to be == data
-					end
-				end.to_not raise_error
-				
-				socket.close
 			end
 		end
 	end

@@ -36,8 +36,6 @@ RSpec.describe "echo client/server" do
 				task.sleep(rand * 0.01)
 				
 				client.write(data)
-				
-				client.close
 			end
 		end
 	end
@@ -50,8 +48,6 @@ RSpec.describe "echo client/server" do
 				message = peer.read(512)
 				
 				responses << message
-				
-				peer.close
 			end
 		end
 	end

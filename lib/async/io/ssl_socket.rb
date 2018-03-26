@@ -86,18 +86,6 @@ module Async
 		class SSLServer
 			extend Forwardable
 			
-			def self.bind(socket, context, &block)
-				server = self.new(socket, context)
-				
-				return server unless block_given?
-				
-				begin
-					yield server
-				ensure
-					server.close
-				end
-			end
-			
 			def initialize(server, context)
 				@server = server
 				@context = context

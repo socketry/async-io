@@ -43,20 +43,17 @@ RSpec.describe Async::IO::UNIXSocket do
 			Async::IO::UNIXServer.wrap(path) do |server|
 				server.accept do |peer|
 					peer.send(peer.recv(512))
-					peer.close
 				end
-				server.close
 			end
 		end
 		
 		reactor.async do
 			Async::IO::UNIXSocket.wrap(path) do |client|
 				client.send(data)
-				response = client.recv(512)
-			
-				expect(response).to be == data
 				
-				client.close
+				response = client.recv(512)
+				
+				expect(response).to be == data
 			end
 		end
 	end

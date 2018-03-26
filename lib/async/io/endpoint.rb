@@ -113,7 +113,7 @@ module Async
 			end
 			
 			def bind(&block)
-				Addrinfo.foreach(*@specification).map do |address|
+				Addrinfo.foreach(*@specification) do |address|
 					Socket.bind(address, **@options, &block)
 				end
 			end
@@ -180,9 +180,9 @@ module Async
 				return context
 			end
 			
-			def bind(&block)
-				@endpoint.bind.map do |server|
-					SSLServer.bind(server, context, &block)
+			def bind
+				@endpoint.bind do |server|
+					yield SSLServer.new(server, context)
 				end
 			end
 			

@@ -46,14 +46,10 @@ RSpec.describe Async::IO::SSLSocket do
 					server.accept do |peer, address|
 						data = peer.read(512)
 						peer.write(data)
-						
-						peer.close
 					end
 				rescue OpenSSL::SSL::SSLError
 					# ignore.
 				end
-				
-				server.close
 			end
 		end
 	end
@@ -70,8 +66,6 @@ RSpec.describe Async::IO::SSLSocket do
 						client.write(data)
 						
 						expect(client.read(512)).to be == data
-						
-						client.close
 					end
 				end
 			end
@@ -85,7 +79,7 @@ RSpec.describe Async::IO::SSLSocket do
 				
 				reactor.async do
 					expect do
-						client_endpoint.connect {|peer| peer.close}
+						client_endpoint.connect
 					end.to raise_error(OpenSSL::SSL::SSLError)
 				end
 			end
