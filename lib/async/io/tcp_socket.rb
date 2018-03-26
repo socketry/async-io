@@ -76,7 +76,13 @@ module Async
 				
 				wrapper = TCPSocket.new(peer)
 				
-				return wrapper, address
+				return wrapper, address unless block_given?
+				
+				begin
+					yield wrapper, adddress
+				ensure
+					wrapper.close
+				end
 			end
 			
 			alias accept_nonblock accept

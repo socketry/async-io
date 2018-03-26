@@ -18,191 +18,139 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require_relative 'address'
 require_relative 'socket'
 require 'uri'
 
 module Async
 	module IO
-		Address = Addrinfo
-		
-		Endpoints = Struct.new(:ordered) do
-			include Enumerable
-			
-			def each(&block)
-				return to_enum unless block_given?
+		module Endpoint
+			def self.parse(string, **options)
+				uri = URI.parse(string)
 				
-				Endpoint.each(self.ordered, &block)
+				self.send(uri.scheme, uri.host, uri.port, **options)
 			end
 			
-			def connect
-				return to_enum(:connect) unless block_given?
+			# args: nodename, service, family, socktype, protocol, flags
+			def self.tcp(*args, **options)
+				args[3] = ::Socket::SOCK_STREAM
 				
-				self.each do |endpoint|
-					endpoint.connect(&block)
+				HostEndpoint.new(args, **options)
+			end
+			
+			def self.udp(*args, **options)
+				args[3] = ::Socket::SOCK_DGRAM
+				
+				HostEndpoint.new(args, **options)
+			end
+			
+			def self.unix(*args, **options)
+				AddressEndpoint.new(Address.unix(*args), **options)
+			end
+			
+			def self.ssl(*args, **options)
+				SecureEndpoint.new(self.tcp(*args, **options), **options)
+			end
+			
+			def self.try_convert(specification)
+				if specification.is_a? self
+					specification
+				elsif specification.is_a? Array
+					self.send(*specification)
+				elsif specification.is_a? String
+					self.parse(specification)
+				elsif specification.is_a? ::BasicSocket
+					SocketEndpoint.new(specification)
+				elsif specification.is_a? Generic
+					Endpoint.new(specification)
+				else
+					raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
 				end
 			end
 			
-			def accept(&block)
-				return to_enum(:accept) unless block_given?
+			# Generate a list of endpoint from an array.
+			def self.each(specifications, &block)
+				return to_enum(:each, specifications) unless block_given?
 				
-				self.each do |endpoint|
-					endpoint.accept(&block)
-				end
-			end
-			
-			def bind
-				return to_enum(:bind) unless block_given?
-				
-				self.each do |endpoint|
-					endpoint.bind(&block)
+				specifications.each do |specification|
+					yield try_convert(specification)
 				end
 			end
 		end
 		
-		class Endpoint < Struct.new(:specification, :options)
-			class << self
-				def parse(string, **options)
-					uri = URI.parse(string)
-					self.send(uri.scheme, uri.host, uri.port, **options)
-				end
-				
-				# args: nodename, service, family, socktype, protocol, flags
-				def tcp(*args, **options)
-					args[3] = ::Socket::SOCK_STREAM
-					
-					HostEndpoint.new(args, **options)
-				end
-				
-				def udp(*args, **options)
-					args[3] = ::Socket::SOCK_DGRAM
-					
-					HostEndpoint.new(args, **options)
-				end
-				
-				def unix(*args, **options)
-					AddressEndpoint.new(Address.unix(*args), **options)
-				end
-				
-				def ssl(*args, **options)
-					SecureEndpoint.new(self.tcp(*args, **options), **options)
-				end
-				
-				# Generate a list of endpoint from an array.
-				def each(specifications, &block)
-					return to_enum(:each, specifications) unless block_given?
-					
-					specifications.each do |specification|
-						if specification.is_a? self
-							yield specification
-						elsif specification.is_a? Array
-							yield self.send(*specification)
-						elsif specification.is_a? String
-							yield self.parse(specification)
-						elsif specification.is_a? ::BasicSocket
-							yield SocketEndpoint.new(specification)
-						elsif specification.is_a? Generic
-							yield Endpoint.new(specification)
-						else
-							raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
-						end
-					end
-				end
-			end
-			
+		class HostEndpoint
 			def initialize(specification, **options)
-				super(specification, options)
-			end
-			
-			def bind
-				yield specification
-			end
-			
-			def accept(&block)
-				backlog = self.options.fetch(:backlog, Socket::SOMAXCONN)
-				
-				bind do |server|
-					begin
-						server.listen(backlog)
-						server.accept_each(&block)
-					ensure
-						server.close
-					end
-				end
-			end
-			
-			def connect
-				yield specification
-			end
-		end
-		
-		class HostEndpoint < Endpoint
-			def bind(&block)
-				return to_enum(:bind) unless block_given?
-				
-				task = Task.current
-				tasks = []
-				
-				task.annotate("binding to #{specification.inspect}")
-				
-				Addrinfo.foreach(*specification).each do |address|
-					tasks << task.async do
-						Socket.bind(address, **options, &block)
-					end
-				end
-				
-				tasks.each(&:wait)
+				@specification = specification
+				@options = options
 			end
 			
 			def connect(&block)
-				return to_enum(:connect) unless block_given?
+				last_error = nil
 				
-				Addrinfo.foreach(*specification).each do |address|
-					Socket.connect(address, &block)
+				Addrinfo.foreach(*@specification).each do |address|
+					begin
+						return Socket.connect(address, **@options, &block)
+					rescue
+						last_error = $!
+					end
+				end
+				
+				raise last_error
+			end
+			
+			def bind(&block)
+				Addrinfo.foreach(*@specification).map do |address|
+					Socket.bind(address, **@options, &block)
+				end
+			end
+			
+			def each
+				return to_enum unless block_given?
+				
+				Addrinfo.foreach(*@specification).each do |address|
+					yield AddressEndpoint.new(address, **@options)
 				end
 			end
 		end
 		
 		# This class will open and close the socket automatically.
-		class AddressEndpoint < Endpoint
+		class AddressEndpoint
+			def initialize(address, **options)
+				@address = address
+				@options = options
+			end
+			
+			attr :address
+			attr :options
+			
 			def bind(&block)
-				return to_enum(:bind) unless block_given?
-				
-				Socket.bind(specification, **options, &block)
+				Socket.bind(@address, **@options, &block)
 			end
 			
 			def connect(&block)
-				return to_enum(:connect) unless block_given?
-				
-				Socket.connect(specification, &block)
+				Socket.connect(@address, **@options, &block)
 			end
 		end
 		
-		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
-		class SocketEndpoint < Endpoint
-			def bind(&block)
-				return to_enum(:bind) unless block_given?
-				
-				yield Socket.new(specification)
+		class SecureEndpoint
+			def initialize(endpoint, **options)
+				@endpoint = endpoint
+				@options = options
 			end
 			
-			def connect(&block)
-				return to_enum(:connect) unless block_given?
-				
-				yield Async::IO.try_convert(specification)
-			end
-		end
-		
-		class SecureEndpoint < Endpoint
+			attr :endpoint
+			attr :options
+			
 			def hostname
-				options[:hostname]
+				@options[:hostname]
 			end
 			
 			def params
-				options[:ssl_params]
+				@options[:ssl_params]
 			end
 			
 			def context
-				if context = options[:ssl_context]
+				if context = @options[:ssl_context]
 					if params = self.params
 						context = context.dup
 						context.set_params(params)
@@ -219,33 +167,38 @@ module Async
 			end
 			
 			def bind(&block)
-				return to_enum(:bind) unless block_given?
-				
-				specification.bind do |server|
-					yield SSLServer.new(server, context)
+				@endpoint.bind.map do |server|
+					SSLServer.bind(server, context, &block)
 				end
 			end
 			
 			def connect(&block)
-				return to_enum(:connect) unless block_given?
-				
-				specification.connect do |socket|
-					ssl_socket = SSLSocket.wrap(socket, context)
-					
-					# Used for SNI:
-					if hostname = self.hostname
-						ssl_socket.hostname = hostname
-					end
-					
-					begin
-						ssl_socket.connect
-					rescue
-						# If the connection fails (e.g. certificates are invalid), the caller never sees the socket, so we close it and raise the exception up the chain.
-						ssl_socket.close
-						raise
-					end
-					
-					yield ssl_socket
+				SSLSocket.connect(@endpoint.connect, context, hostname, &block)
+			end
+		end
+		
+		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
+		class SocketEndpoint
+			def initialize(socket)
+				# This socket should already be in the required state.
+				@socket = Async::IO.try_convert(socket)
+			end
+			
+			attr :socket
+			
+			def bind(&block)
+				if block_given?
+					yield @socket
+				else
+					return @socket
+				end
+			end
+			
+			def connect(&block)
+				if block_given?
+					yield @socket
+				else
+					return @socket
 				end
 			end
 		end

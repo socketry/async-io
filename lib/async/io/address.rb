@@ -18,33 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'socket'
+require 'socket'
 
 module Async
 	module IO
-		class UNIXSocket < BasicSocket
-			# `send_io`, `recv_io` and `recvfrom` may block but no non-blocking implementation available.
-			wraps ::UNIXSocket, :path, :addr, :peeraddr, :send_io, :recv_io, :recvfrom
-		end
-		
-		class UNIXServer < UNIXSocket
-			wraps ::UNIXServer, :listen
-			
-			def accept
-				peer = async_send(:accept_nonblock)
-				wrapper = UNIXSocket.new(peer, self.reactor)
-				
-				return wrapper unless block_given?
-				
-				begin
-					yield wrapper
-				ensure
-					wrapper.close
-				end
-			end
-			
-			alias sysaccept accept
-			alias accept_nonblock accept
-		end
+		Address = Addrinfo
 	end
 end

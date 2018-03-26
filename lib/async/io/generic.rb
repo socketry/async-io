@@ -25,7 +25,11 @@ module Async
 	module IO
 		# Convert a Ruby ::IO object to a wrapped instance:
 		def self.try_convert(io, &block)
-			Generic::WRAPPERS[io.class].wrap(io, &block)
+			if wrapper_class = Generic::WRAPPERS[io.class]
+				wrapper_class.new(io, &block)
+			else
+				raise ArgumentError.new("Unsure how to wrap #{io.class}!")
+			end
 		end
 		
 		# Represents an asynchronous IO within a reactor.
@@ -71,7 +75,11 @@ module Async
 					
 					return wrapper unless block_given?
 					
-					yield wrapper
+					begin
+						yield wrapper
+					ensure
+						wrapper.close
+					end
 				end
 			end
 			

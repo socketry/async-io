@@ -75,7 +75,11 @@ module Async
 				task.async do |task|
 					task.annotate "incoming connection #{address.inspect}"
 					
-					yield wrapper, address
+					begin
+						yield wrapper, address
+					ensure
+						wrapper.close
+					end
 				end
 			end
 			
@@ -100,11 +104,11 @@ module Async
 			# @param remote_address [Addrinfo] The remote address to connect to.
 			# @param local_address [Addrinfo] The local address to bind to before connecting.
 			# @option protcol [Integer] The socket protocol to use.
-			def self.connect(remote_address, local_address = nil, task: Task.current, **options)
+			def self.connect(remote_address, local_address = nil, reuse_port: false, task: Task.current, **options)
 				task.annotate "connecting to #{remote_address.inspect}"
 				
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, reuse_port)
 					
 					if local_address
 						socket.bind(local_address.to_sockaddr)
@@ -123,7 +127,11 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				yield wrapper, task
+				begin
+					yield wrapper, task
+				ensure
+					wrapper.close
+				end
 			end
 			
 			# Bind to a local address.
@@ -143,7 +151,11 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				yield wrapper, task
+				begin
+					yield wrapper, task
+				ensure
+					wrapper.close
+				end
 			end
 			
 			# Bind to a local address and accept connections in a loop.

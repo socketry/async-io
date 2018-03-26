@@ -38,6 +38,32 @@ module Async
 			
 			# It's hard to know what #to_io / #io should do. So, they are omitted.
 			
+			def self.connect(socket, context, hostname = nil, &block)
+				client = self.wrap(socket, context)
+				
+				# Used for SNI:
+				if hostname
+					client.hostname = hostname
+				end
+				
+				begin
+					client.connect
+				rescue
+					# If the connection fails (e.g. certificates are invalid), the caller never sees the socket, so we close it and raise the exception up the chain.
+					client.close
+					
+					raise
+				end
+				
+				return client unless block_given?
+				
+				begin
+					yield client
+				ensure
+					client.close
+				end
+			end
+			
 			def local_address
 				@io.to_io.local_address
 			end
@@ -59,6 +85,18 @@ module Async
 		# We reimplement this from scratch because the native implementation doesn't expose the underlying server/context that we need to implement non-blocking accept.
 		class SSLServer
 			extend Forwardable
+			
+			def self.bind(socket, context, &block)
+				server = self.new(socket, context)
+				
+				return server unless block_given?
+				
+				begin
+					yield server
+				ensure
+					server.close
+				end
+			end
 			
 			def initialize(server, context)
 				@server = server

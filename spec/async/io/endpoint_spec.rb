@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# This seems to break rbx
-# require 'async/io/endpoint'
+require 'async/io/endpoint'
+require 'async/io/tcp_socket'
 
 RSpec.describe Async::IO::Endpoint do
 	include_context Async::RSpec::Reactor
@@ -35,7 +35,7 @@ RSpec.describe Async::IO::Endpoint do
 	describe Async::IO::SocketEndpoint.new(TCPServer.new('0.0.0.0', 1234)) do
 		it "should bind to given socket" do
 			subject.bind do |server|
-				expect(server.io).to be == subject.specification
+				expect(server).to be == subject.socket
 			end
 		end
 	end
