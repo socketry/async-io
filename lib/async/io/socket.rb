@@ -141,8 +141,6 @@ module Async
 			# @option protocol [Integer] The socket protocol to use.
 			# @option reuse_port [Boolean] Allow this port to be bound in multiple processes.
 			def self.bind(local_address, protocol: 0, reuse_port: false, task: Task.current, **options, &block)
-				task.annotate "binding to #{local_address.inspect}"
-				
 				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
 					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
@@ -151,10 +149,14 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				begin
-					yield wrapper, task
-				ensure
-					wrapper.close
+				task.async do
+					task.annotate "binding to #{local_address.inspect}"
+					
+					begin
+						yield wrapper, task
+					ensure
+						wrapper.close
+					end
 				end
 			end
 			

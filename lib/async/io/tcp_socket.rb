@@ -79,7 +79,7 @@ module Async
 				return wrapper, address unless block_given?
 				
 				begin
-					yield wrapper, adddress
+					yield wrapper, address
 				ensure
 					wrapper.close
 				end

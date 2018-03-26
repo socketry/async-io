@@ -24,7 +24,7 @@ require 'uri'
 
 module Async
 	module IO
-		module Endpoint
+		class Endpoint
 			def self.parse(string, **options)
 				uri = URI.parse(string)
 				
@@ -76,9 +76,23 @@ module Async
 					yield try_convert(specification)
 				end
 			end
+			
+			def each
+				return to_enum unless block_given?
+				
+				yield self
+			end
+			
+			def accept(backlog = Socket::SOMAXCONN, &block)
+				bind do |server|
+					server.listen(backlog)
+					
+					server.accept_each(&block)
+				end
+			end
 		end
 		
-		class HostEndpoint
+		class HostEndpoint < Endpoint
 			def initialize(specification, **options)
 				@specification = specification
 				@options = options
@@ -114,7 +128,7 @@ module Async
 		end
 		
 		# This class will open and close the socket automatically.
-		class AddressEndpoint
+		class AddressEndpoint < Endpoint
 			def initialize(address, **options)
 				@address = address
 				@options = options
@@ -132,7 +146,7 @@ module Async
 			end
 		end
 		
-		class SecureEndpoint
+		class SecureEndpoint < Endpoint
 			def initialize(endpoint, **options)
 				@endpoint = endpoint
 				@options = options
@@ -175,10 +189,18 @@ module Async
 			def connect(&block)
 				SSLSocket.connect(@endpoint.connect, context, hostname, &block)
 			end
+			
+			def each
+				return to_enum unless block_given?
+				
+				@endpoint.each do |endpoint|
+					yield self.class.new(endpoint, @options)
+				end
+			end
 		end
 		
 		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
-		class SocketEndpoint
+		class SocketEndpoint < Endpoint
 			def initialize(socket)
 				# This socket should already be in the required state.
 				@socket = Async::IO.try_convert(socket)
