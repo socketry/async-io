@@ -98,6 +98,10 @@ module Async
 				@options = options
 			end
 			
+			def to_s
+				"\#<#{self.class} #{@specification.inspect}>"
+			end
+			
 			def connect(&block)
 				last_error = nil
 				
@@ -134,6 +138,10 @@ module Async
 				@options = options
 			end
 			
+			def to_s
+				"\#<#{self.class} #{@address.inspect}>"
+			end
+			
 			attr :address
 			attr :options
 			
@@ -150,6 +158,10 @@ module Async
 			def initialize(endpoint, **options)
 				@endpoint = endpoint
 				@options = options
+			end
+			
+			def to_s
+				"\#<#{self.class} #{@endpoint}>"
 			end
 			
 			attr :endpoint
@@ -204,6 +216,10 @@ module Async
 			def initialize(socket)
 				# This socket should already be in the required state.
 				@socket = Async::IO.try_convert(socket)
+			end
+			
+			def to_s
+				"\#<#{self.class} #{@socket.inspect}>"
 			end
 			
 			attr :socket
