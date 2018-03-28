@@ -24,6 +24,12 @@ require 'async/io/tcp_socket'
 RSpec.describe Async::IO::Endpoint do
 	include_context Async::RSpec::Reactor
 	
+	describe Async::IO::Endpoint.ssl('0.0.0.0', 5234, hostname: "lolcathost") do
+		it "should have hostname" do
+			expect(subject.hostname).to be == "lolcathost"
+		end
+	end
+	
 	describe Async::IO::Endpoint.tcp('0.0.0.0', 5234, reuse_port: true) do
 		it "should be a tcp binding" do
 			subject.bind do |server|

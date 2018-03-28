@@ -183,7 +183,7 @@ module Async
 			end
 			
 			def hostname
-				endpoint.hostname
+				@options.fetch(:hostname) {@endpoint.hostname}
 			end
 			
 			attr :endpoint
