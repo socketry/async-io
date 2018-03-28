@@ -43,7 +43,7 @@ module Async
 				
 				while true
 					self.accept(task: task) do |io, address|
-						yield io, address
+						yield io, address, task: task
 					end
 				end
 			end
