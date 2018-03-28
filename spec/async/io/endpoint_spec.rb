@@ -30,6 +30,18 @@ RSpec.describe Async::IO::Endpoint do
 				expect(server.local_address.socktype).to be == ::Socket::SOCK_STREAM
 			end
 		end
+		
+		it "should print nicely" do
+			expect(subject.to_s).to include('0.0.0.0', '5234')
+		end
+		
+		it "has options" do
+			expect(subject.options[:reuse_port]).to be true
+		end
+		
+		it "has hostname" do
+			expect(subject.hostname).to be == '0.0.0.0'
+		end
 	end
 	
 	describe Async::IO::SocketEndpoint.new(TCPServer.new('0.0.0.0', 1234)) do
