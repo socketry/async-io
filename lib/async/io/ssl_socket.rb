@@ -28,7 +28,7 @@ module Async
 		
 		# Asynchronous TCP socket wrapper.
 		class SSLSocket < Generic
-			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :close, :context, :hostname, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :session, :session=, :session_reused?, :ssl_version, :state, :sync_close, :sync_close=, :sysclose, :verify_result, :tmp_key
+			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :close, :context, :getsockopt, :hostname, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :setsockopt, :session, :session=, :session_reused?, :ssl_version, :state, :sync_close, :sync_close=, :sysclose, :verify_result, :tmp_key
 			
 			wrap_blocking_method :accept, :accept_nonblock
 			wrap_blocking_method :connect, :connect_nonblock
