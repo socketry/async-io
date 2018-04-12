@@ -29,8 +29,6 @@ module Async
 				
 				@input = pipe.first
 				@output = pipe.last
-				
-				@count = 0
 			end
 			
 			def close
