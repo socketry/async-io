@@ -22,7 +22,7 @@ And then execute:
 
 Or install it yourself as:
 
-	$ gem install async-socket
+	$ gem install async-io
 
 ## Usage
 
