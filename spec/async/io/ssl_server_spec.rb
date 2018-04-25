@@ -25,36 +25,100 @@ require_relative 'generic_examples'
 
 RSpec.describe Async::IO::SSLServer do
 	include_context Async::RSpec::Reactor
-	include_context Async::RSpec::SSL::VerifiedContexts
-	include_context Async::RSpec::SSL::ValidCertificate
 	
-	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6780, reuse_port: true)}
-	let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
-	let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
-	
-	let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
-	
-	it 'can accept_each connections' do
-		# Accept a single incoming connection and then finish.
-		server_task = reactor.async do |task|
-			server_endpoint.bind do |server|
-				server.listen(10)
-				
-				server.accept_each do |peer, address|
-					data = peer.read(512)
-					peer.write(data)
+	context 'single host' do
+		include_context Async::RSpec::SSL::VerifiedContexts
+		include_context Async::RSpec::SSL::ValidCertificate
+		
+		let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6780, reuse_port: true)}
+		let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
+		let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
+		
+		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
+		
+		it 'can accept_each connections' do
+			# Accept a single incoming connection and then finish.
+			server_task = reactor.async do |task|
+				server_endpoint.bind do |server|
+					server.listen(10)
+					
+					server.accept_each do |peer, address|
+						data = peer.read(512)
+						peer.write(data)
+					end
 				end
+			end
+			
+			reactor.async do
+				client_endpoint.connect do |client|
+					client.write(data)
+					
+					expect(client.read(512)).to be == data
+				end
+				
+				server_task.stop
+			end
+		end
+	end
+	
+	context 'multiple hosts' do
+		let(:hosts) {['test.com', 'example.com']}
+		
+		include_context Async::RSpec::SSL::HostCertificates
+		
+		let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6782, reuse_port: true)}
+		let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
+		let(:valid_client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, hostname: 'example.com', ssl_context: client_context)}
+		let(:invalid_client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, hostname: 'fleeb.com', ssl_context: client_context)}
+		
+		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
+		
+		it 'can select correct host' do
+			# Accept a single incoming connection and then finish.
+			server_task = reactor.async do |task|
+				server_endpoint.bind do |server|
+					server.listen(10)
+					
+					server.accept_each do |peer, address|
+						expect(peer.hostname).to be == 'example.com'
+						
+						data = peer.read(512)
+						peer.write(data)
+					end
+				end
+			end
+			
+			reactor.async do
+				valid_client_endpoint.connect do |client|
+					client.write(data)
+					
+					expect(client.read(512)).to be == data
+				end
+				
+				server_task.stop
 			end
 		end
 		
-		reactor.async do
-			client_endpoint.connect do |client|
-				client.write(data)
-				
-				expect(client.read(512)).to be == data
+		it 'it fails with invalid host' do
+			# Accept a single incoming connection and then finish.
+			server_task = reactor.async do |task|
+				server_endpoint.bind do |server|
+					server.listen(10)
+					
+					server.accept_each do |peer, address|
+						peer.close
+					end
+				end
 			end
 			
-			server_task.stop
+			reactor.async do
+				expect do
+					invalid_client_endpoint.connect do |client|
+					end
+				end.to raise_error(OpenSSL::SSL::SSLError, /handshake failure/)
+				
+				server_task.stop
+			end
 		end
 	end
 end
