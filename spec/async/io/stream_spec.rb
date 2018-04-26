@@ -34,8 +34,37 @@ RSpec.describe Async::IO::Stream do
 		end
 	end
 	
+	describe '#flush' do
+		it "should not call write if write buffer is empty" do
+			expect(io).to_not receive(:write)
+			
+			stream.flush
+		end
+		
+		it "should flush underlying data when it exceeds block size" do
+			expect(io).to receive(:write).and_call_original.once
+			
+			stream.block_size.times do
+				stream.write("!")
+			end
+		end
+	end
+	
+	describe '#read_partial' do
+		it "should avoid calling read" do
+			io.puts "Hello World" * 1024
+			io.seek(0)
+			
+			expect(io).to receive(:read).and_call_original.once
+			
+			expect(stream.read_partial(11)).to be == "Hello World"
+		end
+	end
+	
 	describe '#write' do
 		it "should read one line" do
+			expect(io).to receive(:write).and_call_original.once
+			
 			stream.write "Hello World\n"
 			stream.flush
 			

@@ -39,9 +39,11 @@ module Async
 			
 			attr :io
 			
+			attr :block_size
+			
 			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 			def read(size = nil)
-				return "" if size == 0
+				return '' if size == 0
 				
 				until @eof || (size && size <= @read_buffer.size)
 					fill_read_buffer
@@ -49,16 +51,31 @@ module Async
 
 				return consume_read_buffer(size)
 			end
-
+			
+			# Read at most `size` bytes from the stream. Will avoid reading from the underlying stream if possible.
+			def read_partial(size = nil)
+				return '' if size == 0
+				
+				if @read_buffer.empty? and !@eof
+					fill_read_buffer
+				end
+				
+				return consume_read_buffer(size)
+			end
+			
 			# Writes `string` to the buffer. When the buffer is full or #sync is true the
 			# buffer is flushed to the underlying `io`.
 			# @param string the string to write to the buffer.
 			# @return the number of bytes appended to the buffer.
 			def write(string)
-				@write_buffer << string
-				
-				if @write_buffer.size > @block_size
-					flush
+				if @write_buffer.empty? and string.bytesize > @block_size
+					syswrite(string)
+				else
+					@write_buffer << string
+					
+					if @write_buffer.size >= @block_size
+						flush
+					end
 				end
 				
 				return string.bytesize
@@ -73,8 +90,10 @@ module Async
 
 			# Flushes buffered data to the stream.
 			def flush
-				syswrite(@write_buffer)
-				@write_buffer.clear
+				unless @write_buffer.empty?
+					syswrite(@write_buffer)
+					@write_buffer.clear
+				end
 			end
 
 			def gets(separator = $/)
@@ -138,15 +157,13 @@ module Async
 			private
 			
 			# Fills the buffer from the underlying stream.
-			def fill_read_buffer
-				if buffer = @io.read(@block_size)
-					@read_buffer << buffer
-				else
+			def fill_read_buffer(size = @block_size)
+				if !sysread(size, @read_buffer)
 					@eof = true
 				end
 			end
 
-			# Consumes `size` bytes from the buffer.
+			# Consumes at most `size` bytes from the buffer.
 			# @param size [Integer|nil] The amount of data to consume. If nil, consume entire buffer.
 			def consume_read_buffer(size = nil)
 				# If we are at eof, and the read buffer is empty, we can't consume anything.
@@ -154,7 +171,7 @@ module Async
 				
 				result = nil
 				
-				if size == nil || size == @read_buffer.size
+				if size == nil || size >= @read_buffer.size
 					# Consume the entire read buffer:
 					result = @read_buffer.dup
 					@read_buffer.clear
@@ -186,6 +203,15 @@ module Async
 				end
 				
 				return written
+			end
+			
+			# Read to 
+			def sysread(size, buffer)
+				if buffer.empty?
+					@io.read(size, buffer)
+				elsif chunk = @io.read(size)
+					buffer << chunk
+				end
 			end
 		end
 	end
