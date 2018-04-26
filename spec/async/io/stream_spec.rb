@@ -26,10 +26,25 @@ RSpec.describe Async::IO::Stream do
 	
 	describe '#read' do
 		it "should read everything" do
-			io.puts "Hello World"
+			io.write "Hello World"
 			io.seek(0)
 			
-			expect(stream.read).to be == "Hello World\n"
+			expect(io).to receive(:read).and_call_original.twice
+			
+			expect(stream.read).to be == "Hello World"
+			expect(stream).to be_eof
+		end
+		
+		it "should read only the amount requested" do
+			io.write "Hello World"
+			io.seek(0)
+			
+			expect(io).to receive(:read).and_call_original.twice
+			
+			expect(stream.read(4)).to be == "Hell"
+			expect(stream).to_not be_eof
+			
+			expect(stream.read(20)).to be == "o World"
 			expect(stream).to be_eof
 		end
 	end
@@ -52,7 +67,7 @@ RSpec.describe Async::IO::Stream do
 	
 	describe '#read_partial' do
 		it "should avoid calling read" do
-			io.puts "Hello World" * 1024
+			io.write "Hello World" * 1024
 			io.seek(0)
 			
 			expect(io).to receive(:read).and_call_original.once

@@ -38,17 +38,22 @@ module Async
 			end
 			
 			attr :io
-			
 			attr :block_size
 			
 			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 			def read(size = nil)
 				return '' if size == 0
 				
-				until @eof || (size && size <= @read_buffer.size)
-					fill_read_buffer
+				if size
+					if size <= @block_size
+						fill_read_buffer until @eof or @read_buffer.size >= size
+					else
+						fill_read_buffer(size - @read_buffer.size) until @eof or @read_buffer.size >= size
+					end
+				else
+					fill_read_buffer until @eof
 				end
-
+				
 				return consume_read_buffer(size)
 			end
 			
@@ -68,7 +73,7 @@ module Async
 			# @param string the string to write to the buffer.
 			# @return the number of bytes appended to the buffer.
 			def write(string)
-				if @write_buffer.empty? and string.bytesize > @block_size
+				if @write_buffer.empty? and string.bytesize >= @block_size
 					syswrite(string)
 				else
 					@write_buffer << string
