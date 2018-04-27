@@ -75,6 +75,9 @@ module Async
 			def self.wrap(socket, context)
 				io = @wrapped_klass.new(socket.to_io, context)
 				
+				# We detach the socket from the reactor, otherwise it's possible to add the file descriptor to the selector twice, which is bad.
+				socket.reactor = nil
+				
 				# This ensures that when the internal IO is closed, it also closes the internal socket:
 				io.sync_close = true
 				
