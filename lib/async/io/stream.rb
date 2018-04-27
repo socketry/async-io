@@ -158,16 +158,15 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer
-				Async.logger.debug(self){"fill_read_buffer..."}
-				
 				# Can we read directly into the buffer? (Ruby doesn't support append, only replace):
-				if chunk = @io.read(@block_size)
-					Async.logger.debug(self){"@io.read -> #{chunk.size} bytes"}
+				if @read_buffer.empty?
+					if @io.read(@block_size, @read_buffer)
+						return true
+					end
+				elsif chunk = @io.read(@block_size)
 					@read_buffer << chunk
 					return true
 				end
-				
-				Async.logger.debug(self){"@io.read -> #{chunk.inspect}"}
 				
 				# We didn't read anything, so we must be at eof:
 				@eof = true
