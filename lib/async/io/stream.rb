@@ -24,7 +24,9 @@ require_relative 'generic'
 module Async
 	module IO
 		class Stream
-			BLOCK_SIZE = 1024*16
+			# The default block size for IO buffers.
+			# BLOCK_SIZE = ENV.fetch('BLOCK_SIZE', 1024*16).to_i
+			BLOCK_SIZE = 1024*8
 			
 			def initialize(io, block_size: BLOCK_SIZE, sync: true)
 				@io = io
@@ -47,11 +49,7 @@ module Async
 				return '' if size == 0
 				
 				if size
-					if size <= @block_size
-						fill_read_buffer until @eof or @read_buffer.size >= size
-					else
-						fill_read_buffer(size - @read_buffer.size) until @eof or @read_buffer.size >= size
-					end
+					fill_read_buffer until @eof or @read_buffer.size >= size
 				else
 					fill_read_buffer until @eof
 				end
@@ -70,6 +68,32 @@ module Async
 				return consume_read_buffer(size)
 			end
 			
+			# Efficiently read data from the stream until encountering pattern.
+			# @param pattern [String] The pattern to match.
+			# @return [String] The contents of the stream up until the pattern, which is consumed but not returned.
+			def read_until(pattern, offset = 0)
+				until index = @read_buffer.index(pattern, offset)
+					Async.logger.debug(self){"Failed to match #{pattern.inspect} starting from #{offset} in #{@read_buffer.inspect}"}
+					
+					offset = @read_buffer.size
+					
+					return unless fill_read_buffer
+				end
+				
+				Async.logger.debug(self){"Matched #{pattern.inspect} at #{index}"}
+				
+				matched = @read_buffer.slice!(0, index)
+				@read_buffer.slice!(0, pattern.bytesize)
+				
+				return matched
+			end
+			
+			def peek
+				until yield(@read_buffer) || @eof
+					fill_read_buffer
+				end
+			end
+			
 			# Writes `string` to the buffer. When the buffer is full or #sync is true the
 			# buffer is flushed to the underlying `io`.
 			# @param string the string to write to the buffer.
@@ -81,7 +105,8 @@ module Async
 					@write_buffer << string
 					
 					if @write_buffer.size >= @block_size
-						flush
+						syswrite(@write_buffer)
+						@write_buffer.clear
 					end
 				end
 				
@@ -119,8 +144,8 @@ module Async
 
 			# Closes the stream and flushes any unwritten data.
 			def close
-				flush rescue nil
-				
+				flush
+			ensure
 				@io.close
 			end
 
@@ -133,41 +158,24 @@ module Async
 			
 			alias eof eof?
 			
-			# Efficiently read data from the stream until encountering pattern.
-			# @param pattern [String] The pattern to match.
-			# @return [String] The contents of the stream up until the pattern, which is consumed but not returned.
-			def read_until(pattern)
-				index = @read_buffer.index(pattern)
-				
-				until index
-					offset = @read_buffer.size
-
-					fill_read_buffer
-					
-					return if @eof
-
-					index = @read_buffer.index(pattern, offset)
-				end
-				
-				matched = @read_buffer.slice!(0, index)
-				@read_buffer.slice!(0, pattern.bytesize)
-				
-				return matched
-			end
-			
-			def peek
-				until yield(@read_buffer) || @eof
-					fill_read_buffer
-				end
-			end
-			
 			private
 			
 			# Fills the buffer from the underlying stream.
-			def fill_read_buffer(size = @block_size)
-				if !sysread(size, @read_buffer)
-					@eof = true
+			def fill_read_buffer
+				Async.logger.debug(self){"fill_read_buffer..."}
+				
+				# Can we read directly into the buffer? (Ruby doesn't support append, only replace):
+				if chunk = @io.read(@block_size)
+					Async.logger.debug(self){"@io.read -> #{chunk.size} bytes"}
+					@read_buffer << chunk
+					return true
 				end
+				
+				Async.logger.debug(self){"@io.read -> #{chunk.inspect}"}
+				
+				# We didn't read anything, so we must be at eof:
+				@eof = true
+				return false
 			end
 
 			# Consumes at most `size` bytes from the buffer.
@@ -210,15 +218,6 @@ module Async
 				end
 				
 				return written
-			end
-			
-			# Read to 
-			def sysread(size, buffer)
-				if buffer.empty?
-					@io.read(size, buffer)
-				elsif chunk = @io.read(size)
-					buffer << chunk
-				end
 			end
 		end
 	end

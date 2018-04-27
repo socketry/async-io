@@ -49,6 +49,17 @@ RSpec.describe Async::IO::Stream do
 		end
 	end
 	
+	describe '#read_until' do
+		it "can read a line" do
+			io.write("hello\nworld\n")
+			io.seek(0)
+			
+			expect(stream.read_until("\n")).to be == 'hello'
+			expect(stream.read_until("\n")).to be == 'world'
+			expect(stream.read_until("\n")).to be_nil
+		end
+	end
+	
 	describe '#flush' do
 		it "should not call write if write buffer is empty" do
 			expect(io).to_not receive(:write)
