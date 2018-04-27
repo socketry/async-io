@@ -73,14 +73,10 @@ module Async
 			# @return [String] The contents of the stream up until the pattern, which is consumed but not returned.
 			def read_until(pattern, offset = 0)
 				until index = @read_buffer.index(pattern, offset)
-					Async.logger.debug(self){"Failed to match #{pattern.inspect} starting from #{offset} in #{@read_buffer.inspect}"}
-					
 					offset = @read_buffer.size
 					
 					return unless fill_read_buffer
 				end
-				
-				Async.logger.debug(self){"Matched #{pattern.inspect} at #{index}"}
 				
 				matched = @read_buffer.slice!(0, index)
 				@read_buffer.slice!(0, pattern.bytesize)
