@@ -27,6 +27,7 @@ module Async
 			def initialize
 				pipe = ::IO.pipe
 				
+				# We could call wait and signal from different reactors/threads/processes, so we don't create wrappers here, because they are not thread safe by design.
 				@input = pipe.first
 				@output = pipe.last
 			end
@@ -41,12 +42,18 @@ module Async
 			def wait
 				wrapper = Async::IO::Generic.new(@input)
 				wrapper.read(1)
+			ensure
+				# Remove the wrapper from the reactor.
+				wrapper.reactor = nil
 			end
 			
 			# Signal to a given task that it should resume operations.
 			# @return [void]
 			def signal
-				@output.write(".")
+				wrapper = Async::IO::Generic.new(@output)
+				wrapper.write(".")
+			ensure
+				wrapper.reactor = nil
 			end
 		end
 	end
