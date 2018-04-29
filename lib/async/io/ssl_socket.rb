@@ -22,13 +22,15 @@ require_relative 'socket'
 
 require 'openssl'
 
+require 'pry'
+
 module Async
 	module IO
 		SSLError = OpenSSL::SSL::SSLError
 		
 		# Asynchronous TCP socket wrapper.
 		class SSLSocket < Generic
-			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :close, :context, :getsockopt, :hostname, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :setsockopt, :session, :session=, :session_reused?, :ssl_version, :state, :sync_close, :sync_close=, :sysclose, :verify_result, :tmp_key
+			wraps ::OpenSSL::SSL::SSLSocket, :alpn_protocol, :cert, :cipher, :client_ca, :context, :getsockopt, :hostname, :hostname=, :npn_protocol, :peer_cert, :peer_cert_chain, :pending, :post_connection_check, :setsockopt, :session, :session=, :session_reused?, :ssl_version, :state, :sync_close, :sync_close=, :sysclose, :verify_result, :tmp_key
 			
 			wrap_blocking_method :accept, :accept_nonblock
 			wrap_blocking_method :connect, :connect_nonblock
@@ -73,10 +75,10 @@ module Async
 			end
 			
 			def self.wrap(socket, context)
+				io = @wrapped_klass.new(socket.to_io, context)
+				
 				# We detach the socket from the reactor, otherwise it's possible to add the file descriptor to the selector twice, which is bad.
 				socket.reactor = nil
-				
-				io = @wrapped_klass.new(socket.to_io, context)
 				
 				# This ensures that when the internal IO is closed, it also closes the internal socket:
 				io.sync_close = true
