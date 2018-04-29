@@ -22,8 +22,6 @@ require_relative 'socket'
 
 require 'openssl'
 
-require 'pry'
-
 module Async
 	module IO
 		SSLError = OpenSSL::SSL::SSLError
