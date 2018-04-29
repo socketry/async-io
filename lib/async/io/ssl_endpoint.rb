@@ -18,66 +18,74 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'address'
-require_relative 'socket'
-require 'uri'
+require_relative 'ssl_socket'
 
 module Async
 	module IO
-		class Endpoint
-			def initialize(**options)
-				@options = options
+		class SSLEndpoint < Endpoint
+			def initialize(endpoint, **options)
+				super(**options)
+				
+				@endpoint = endpoint
 			end
 			
-			attr :options
+			def to_s
+				"\#<#{self.class} #{@endpoint}>"
+			end
 			
 			def hostname
-				@options[:hostname]
+				@options.fetch(:hostname) {@endpoint.hostname}
 			end
 			
-			def self.parse(string, **options)
-				uri = URI.parse(string)
-				
-				self.send(uri.scheme, uri.host, uri.port, **options)
+			attr :endpoint
+			attr :options
+			
+			def params
+				@options[:ssl_params]
 			end
 			
-			def self.try_convert(specification)
-				if specification.is_a? self
-					specification
-				elsif specification.is_a? Array
-					self.send(*specification)
-				elsif specification.is_a? String
-					self.parse(specification)
-				elsif specification.is_a? ::BasicSocket
-					SocketEndpoint.new(specification)
-				elsif specification.is_a? Generic
-					Endpoint.new(specification)
+			def context
+				if context = @options[:ssl_context]
+					if params = self.params
+						context = context.dup
+						context.set_params(params)
+					end
 				else
-					raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
+					context = ::OpenSSL::SSL::SSLContext.new
+					
+					if params = self.params
+						context.set_params(params)
+					end
+				end
+				
+				return context
+			end
+			
+			def bind
+				@endpoint.bind do |server|
+					yield SSLServer.new(server, context)
 				end
 			end
 			
-			# Generate a list of endpoint from an array.
-			def self.each(specifications, &block)
-				return to_enum(:each, specifications) unless block_given?
-				
-				specifications.each do |specification|
-					yield try_convert(specification)
-				end
+			def connect(&block)
+				SSLSocket.connect(@endpoint.connect, context, hostname, &block)
 			end
 			
 			def each
 				return to_enum unless block_given?
 				
-				yield self
-			end
-			
-			def accept(backlog = Socket::SOMAXCONN, &block)
-				bind do |server|
-					server.listen(backlog)
-					
-					server.accept_each(&block)
+				@endpoint.each do |endpoint|
+					yield self.class.new(endpoint, @options)
 				end
+			end
+		end
+		
+		# Backwards compatibility.
+		SecureEndpoint = SSLEndpoint
+		
+		class Endpoint
+			def self.ssl(*args, **options)
+				SSLEndpoint.new(self.tcp(*args, **options), **options)
 			end
 		end
 	end

@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,66 +18,66 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'address'
-require_relative 'socket'
-require 'uri'
+require_relative 'endpoint'
 
 module Async
 	module IO
-		class Endpoint
-			def initialize(**options)
-				@options = options
+		class HostEndpoint < Endpoint
+			def initialize(specification, **options)
+				super(**options)
+				
+				@specification = specification
 			end
 			
-			attr :options
+			def to_s
+				"\#<#{self.class} #{@specification.inspect}>"
+			end
 			
 			def hostname
-				@options[:hostname]
+				@specification.first
 			end
 			
-			def self.parse(string, **options)
-				uri = URI.parse(string)
+			def connect(&block)
+				last_error = nil
 				
-				self.send(uri.scheme, uri.host, uri.port, **options)
-			end
-			
-			def self.try_convert(specification)
-				if specification.is_a? self
-					specification
-				elsif specification.is_a? Array
-					self.send(*specification)
-				elsif specification.is_a? String
-					self.parse(specification)
-				elsif specification.is_a? ::BasicSocket
-					SocketEndpoint.new(specification)
-				elsif specification.is_a? Generic
-					Endpoint.new(specification)
-				else
-					raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
+				Addrinfo.foreach(*@specification).each do |address|
+					begin
+						return Socket.connect(address, **@options, &block)
+					rescue
+						last_error = $!
+					end
 				end
+				
+				raise last_error
 			end
 			
-			# Generate a list of endpoint from an array.
-			def self.each(specifications, &block)
-				return to_enum(:each, specifications) unless block_given?
-				
-				specifications.each do |specification|
-					yield try_convert(specification)
+			def bind(&block)
+				Addrinfo.foreach(*@specification) do |address|
+					Socket.bind(address, **@options, &block)
 				end
 			end
 			
 			def each
 				return to_enum unless block_given?
 				
-				yield self
+				Addrinfo.foreach(*@specification).each do |address|
+					yield AddressEndpoint.new(address, **@options)
+				end
+			end
+		end
+		
+		class Endpoint
+			# args: nodename, service, family, socktype, protocol, flags
+			def self.tcp(*args, **options)
+				args[3] = ::Socket::SOCK_STREAM
+				
+				HostEndpoint.new(args, **options)
 			end
 			
-			def accept(backlog = Socket::SOMAXCONN, &block)
-				bind do |server|
-					server.listen(backlog)
-					
-					server.accept_each(&block)
-				end
+			def self.udp(*args, **options)
+				args[3] = ::Socket::SOCK_DGRAM
+				
+				HostEndpoint.new(args, **options)
 			end
 		end
 	end
