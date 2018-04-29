@@ -124,6 +124,8 @@ module Async
 					async do
 						@io.__send__(*args, exception: false)
 					end
+				rescue Errno::EPROTOTYPE
+					raise Errno::EPIPE
 				end
 				
 				def async
@@ -155,6 +157,8 @@ module Async
 							wait_readable
 						rescue ::IO::WaitWritable, ::IO::EAGAINWaitWritable
 							wait_writable
+						rescue Errno::EPROTOTYPE
+							raise Errno::EPIPE
 						end
 					end
 				end
@@ -174,6 +178,8 @@ module Async
 							wait_readable
 						rescue ::IO::WaitWritable
 							wait_writable
+						rescue Errno::EPROTOTYPE
+							raise Errno::EPIPE
 						end
 					end
 				end
