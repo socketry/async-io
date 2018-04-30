@@ -18,12 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'endpoint/generic'
+require_relative 'endpoint'
 require_relative 'ssl_socket'
 
 module Async
 	module IO
-		class SSLEndpoint < Endpoint::Generic
+		class SSLEndpoint < Endpoint
 			def initialize(endpoint, **options)
 				super(**options)
 				
@@ -83,5 +83,11 @@ module Async
 		
 		# Backwards compatibility.
 		SecureEndpoint = SSLEndpoint
+		
+		class Endpoint
+			def self.ssl(*args, **options)
+				SSLEndpoint.new(self.tcp(*args, **options), **options)
+			end
+		end
 	end
 end

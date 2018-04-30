@@ -18,11 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'endpoint/generic'
+require_relative 'endpoint'
 
 module Async
 	module IO
-		class SharedEndpoint < Endpoint::Generic
+		class SharedEndpoint < Endpoint
 			def self.bound(endpoint, backlog = Socket::SOMAXCONN)
 				wrappers = []
 				

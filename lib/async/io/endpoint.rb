@@ -18,10 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'host_endpoint'
-require_relative 'socket_endpoint'
-require_relative 'ssl_endpoint'
-
 require_relative 'address'
 require_relative 'socket'
 
@@ -29,61 +25,35 @@ require 'uri'
 
 module Async
 	module IO
-		module Endpoint
-			def self.socket(socket, **options)
-				SocketEndpoint.new(socket, **options)
+		class Endpoint
+			def initialize(**options)
+				@options = options
 			end
 			
-			def self.ssl(*args, **options)
-				SSLEndpoint.new(self.tcp(*args, **options), **options)
+			attr :options
+			
+			def hostname
+				@options[:hostname]
 			end
 			
-			# args: nodename, service, family, socktype, protocol, flags
-			def self.tcp(*args, **options)
-				args[3] = ::Socket::SOCK_STREAM
+			def each
+				return to_enum unless block_given?
 				
-				HostEndpoint.new(args, **options)
+				yield self
 			end
 			
-			def self.udp(*args, **options)
-				args[3] = ::Socket::SOCK_DGRAM
-				
-				HostEndpoint.new(args, **options)
-			end
-			
-			def self.unix(*args, **options)
-				AddressEndpoint.new(Address.unix(*args), **options)
+			def accept(backlog = Socket::SOMAXCONN, &block)
+				bind do |server|
+					server.listen(backlog)
+					
+					server.accept_each(&block)
+				end
 			end
 			
 			def self.parse(string, **options)
 				uri = URI.parse(string)
 				
 				self.send(uri.scheme, uri.host, uri.port, **options)
-			end
-			
-			def self.try_convert(specification)
-				if specification.is_a? self
-					specification
-				elsif specification.is_a? Array
-					self.send(*specification)
-				elsif specification.is_a? String
-					self.parse(specification)
-				elsif specification.is_a? ::BasicSocket
-					SocketEndpoint.new(specification)
-				elsif specification.is_a? Generic
-					Endpoint.new(specification)
-				else
-					raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
-				end
-			end
-			
-			# Generate a list of endpoint from an array.
-			def self.each(specifications, &block)
-				return to_enum(:each, specifications) unless block_given?
-				
-				specifications.each do |specification|
-					yield try_convert(specification)
-				end
 			end
 		end
 	end

@@ -25,3 +25,6 @@ require_relative "io/socket"
 require_relative "io/version"
 
 require_relative "io/endpoint"
+require_relative "io/host_endpoint"
+require_relative "io/socket_endpoint"
+require_relative "io/ssl_endpoint"
