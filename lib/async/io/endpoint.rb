@@ -82,3 +82,6 @@ module Async
 		end
 	end
 end
+
+require 'host_endpoint'
+require 'socket_endpoint'
