@@ -77,6 +77,8 @@ module Async
 					
 					begin
 						yield wrapper, address
+					rescue
+						Async.logger.error(self) {$!}
 					ensure
 						wrapper.close
 					end

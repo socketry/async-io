@@ -118,8 +118,8 @@ module Async
 						wrapper.accept
 						
 						yield wrapper, address
-					rescue SSLError
-						Async.logger.error($!.class) {$!}
+					rescue
+						Async.logger.error(self) {$!}
 					ensure
 						wrapper.close
 					end
