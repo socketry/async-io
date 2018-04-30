@@ -18,21 +18,41 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require_relative 'host_endpoint'
+require_relative 'socket_endpoint'
+require_relative 'ssl_endpoint'
+
 require_relative 'address'
 require_relative 'socket'
+
 require 'uri'
 
 module Async
 	module IO
-		class Endpoint
-			def initialize(**options)
-				@options = options
+		module Endpoint
+			def self.socket(socket, **options)
+				SocketEndpoint.new(socket, **options)
 			end
 			
-			attr :options
+			def self.ssl(*args, **options)
+				SSLEndpoint.new(self.tcp(*args, **options), **options)
+			end
 			
-			def hostname
-				@options[:hostname]
+			# args: nodename, service, family, socktype, protocol, flags
+			def self.tcp(*args, **options)
+				args[3] = ::Socket::SOCK_STREAM
+				
+				HostEndpoint.new(args, **options)
+			end
+			
+			def self.udp(*args, **options)
+				args[3] = ::Socket::SOCK_DGRAM
+				
+				HostEndpoint.new(args, **options)
+			end
+			
+			def self.unix(*args, **options)
+				AddressEndpoint.new(Address.unix(*args), **options)
 			end
 			
 			def self.parse(string, **options)
@@ -65,23 +85,6 @@ module Async
 					yield try_convert(specification)
 				end
 			end
-			
-			def each
-				return to_enum unless block_given?
-				
-				yield self
-			end
-			
-			def accept(backlog = Socket::SOMAXCONN, &block)
-				bind do |server|
-					server.listen(backlog)
-					
-					server.accept_each(&block)
-				end
-			end
 		end
 	end
 end
-
-require 'host_endpoint'
-require 'socket_endpoint'

@@ -22,7 +22,7 @@ require_relative 'address_endpoint'
 
 module Async
 	module IO
-		class HostEndpoint < Endpoint
+		class HostEndpoint < Endpoint::Generic
 			def initialize(specification, **options)
 				super(**options)
 				
@@ -63,21 +63,6 @@ module Async
 				Addrinfo.foreach(*@specification).each do |address|
 					yield AddressEndpoint.new(address, **@options)
 				end
-			end
-		end
-		
-		class Endpoint
-			# args: nodename, service, family, socktype, protocol, flags
-			def self.tcp(*args, **options)
-				args[3] = ::Socket::SOCK_STREAM
-				
-				HostEndpoint.new(args, **options)
-			end
-			
-			def self.udp(*args, **options)
-				args[3] = ::Socket::SOCK_DGRAM
-				
-				HostEndpoint.new(args, **options)
 			end
 		end
 	end

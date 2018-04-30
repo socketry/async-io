@@ -18,12 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'endpoint'
+require_relative 'endpoint/generic'
 
 module Async
 	module IO
 		# This class will open and close the socket automatically.
-		class AddressEndpoint < Endpoint
+		class AddressEndpoint < Endpoint::Generic
 			def initialize(address, **options)
 				super(**options)
 				
@@ -44,12 +44,6 @@ module Async
 			
 			def connect(&block)
 				Socket.connect(@address, **@options, &block)
-			end
-		end
-		
-		class Endpoint
-			def self.unix(*args, **options)
-				AddressEndpoint.new(Address.unix(*args), **options)
 			end
 		end
 	end

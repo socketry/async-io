@@ -18,10 +18,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async'
+require_relative '../socket'
 
-require_relative "io/generic"
-require_relative "io/socket"
-require_relative "io/version"
-
-require_relative "io/endpoint"
+module Async
+	module IO
+		module Endpoint
+			class Generic
+				def initialize(**options)
+					@options = options
+				end
+				
+				attr :options
+				
+				def hostname
+					@options[:hostname]
+				end
+				
+				def each
+					return to_enum unless block_given?
+					
+					yield self
+				end
+				
+				def accept(backlog = Socket::SOMAXCONN, &block)
+					bind do |server|
+						server.listen(backlog)
+						
+						server.accept_each(&block)
+					end
+				end
+			end
+		end
+	end
+end

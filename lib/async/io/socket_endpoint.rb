@@ -18,12 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'generic'
+require_relative 'endpoint/generic'
 
 module Async
 	module IO
 		# This class doesn't exert ownership over the specified socket, wraps a native ::IO.
-		class SocketEndpoint < Endpoint
+		class SocketEndpoint < Endpoint::Generic
 			def initialize(socket, **options)
 				super(**options)
 				
@@ -51,12 +51,6 @@ module Async
 				else
 					return @socket
 				end
-			end
-		end
-		
-		class Endpoint
-			def self.socket(socket, **options)
-				SocketEndpoint.new(socket, **options)
 			end
 		end
 	end
