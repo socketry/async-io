@@ -39,9 +39,11 @@ module Async
 			
 			def bind(&block)
 				if block_given?
-					yield @socket
-					
-					@socket.reactor = nil
+					begin
+						yield @socket
+					ensure
+						@socket.reactor = nil
+					end
 				else
 					return @socket
 				end
@@ -49,9 +51,11 @@ module Async
 			
 			def connect(&block)
 				if block_given?
-					yield @socket
-					
-					@socket.reactor = nil
+					begin
+						yield @socket
+					ensure
+						@socket.reactor = nil
+					end
 				else
 					return @socket
 				end
