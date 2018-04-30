@@ -40,6 +40,8 @@ module Async
 			def bind(&block)
 				if block_given?
 					yield @socket
+					
+					@socket.reactor = nil
 				else
 					return @socket
 				end
@@ -48,6 +50,8 @@ module Async
 			def connect(&block)
 				if block_given?
 					yield @socket
+					
+					@socket.reactor = nil
 				else
 					return @socket
 				end
