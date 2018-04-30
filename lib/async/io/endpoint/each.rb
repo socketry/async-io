@@ -18,11 +18,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async'
+require_relative "../host_endpoint"
+require_relative "../socket_endpoint"
+require_relative "../ssl_endpoint"
 
-require_relative "io/generic"
-require_relative "io/socket"
-require_relative "io/version"
-
-require_relative "io/endpoint"
-require_relative "io/endpoint/each"
+module Async
+	module IO
+		class Endpoint
+			def self.try_convert(specification)
+				if specification.is_a? self
+					specification
+				elsif specification.is_a? Array
+					self.send(*specification)
+				elsif specification.is_a? String
+					self.parse(specification)
+				elsif specification.is_a? ::BasicSocket
+					self.socket(specification)
+				elsif specification.is_a? Generic
+					self.new(specification)
+				else
+					raise ArgumentError.new("Not sure how to convert #{specification} to endpoint!")
+				end
+			end
+			
+			# Generate a list of endpoint from an array.
+			def self.each(specifications, &block)
+				return to_enum(:each, specifications) unless block_given?
+				
+				specifications.each do |specification|
+					yield try_convert(specification)
+				end
+			end
+		end
+	end
+end
