@@ -148,6 +148,9 @@ module Async
 				
 				begin
 					flush
+				rescue
+					# We really can't do anything here unless we want #close to raise exceptions.
+					Async.logger.error(self) {$!}
 				ensure
 					@io.close
 				end
@@ -161,6 +164,13 @@ module Async
 			end
 			
 			alias eof eof?
+			
+			def eof!
+				@read_buffer.clear
+				@eof = true
+				
+				raise EOFError
+			end
 			
 			private
 			

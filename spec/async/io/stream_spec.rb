@@ -98,6 +98,16 @@ RSpec.describe Async::IO::Stream do
 		end
 	end
 	
+	describe '#eof' do
+		it "should terminate stream" do
+			expect do
+				stream.eof!
+			end.to raise_error(EOFError)
+			
+			expect(stream).to be_eof
+		end
+	end
+	
 	describe '#close' do
 		it 'can be closed even if underlying io is closed' do
 			io.close

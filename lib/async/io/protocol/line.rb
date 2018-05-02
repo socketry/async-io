@@ -48,7 +48,7 @@ module Async
 				end
 				
 				def read_line
-					@stream.read_until(@eol) or raise EOFError
+					@stream.read_until(@eol) or @stream.eof!
 				end
 				
 				def peek_line
