@@ -138,11 +138,19 @@ module Async
 				flush
 			end
 
+			def closed?
+				@io.closed?
+			end
+			
 			# Closes the stream and flushes any unwritten data.
 			def close
-				flush
-			ensure
-				@io.close
+				return if @io.closed?
+				
+				begin
+					flush
+				ensure
+					@io.close
+				end
 			end
 
 			# Returns true if the stream is at file which means there is no more data to be read.

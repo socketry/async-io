@@ -97,4 +97,19 @@ RSpec.describe Async::IO::Stream do
 			expect(io.string).to be == "Hello World\n"
 		end
 	end
+	
+	describe '#close' do
+		it 'can be closed even if underlying io is closed' do
+			io.close
+			
+			expect(stream.io).to be_closed
+			
+			# Put some data in the write buffer
+			stream.write "."
+			
+			expect do
+				stream.close
+			end.to_not raise_error
+		end
+	end
 end
