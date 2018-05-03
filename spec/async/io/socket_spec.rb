@@ -63,6 +63,18 @@ RSpec.describe Async::IO::Socket do
 			expect(s2.recv(32)).to be == "Hello World"
 			s2.close
 		end
+		
+		it "should be connected" do
+			s1, s2 = *subject
+			
+			expect(s1).to be_connected
+			
+			s1.close
+			
+			expect(s2).to_not be_connected
+			
+			s2.close
+		end
 	end
 end
 

@@ -25,6 +25,8 @@ module Async
 		class UNIXSocket < BasicSocket
 			# `send_io`, `recv_io` and `recvfrom` may block but no non-blocking implementation available.
 			wraps ::UNIXSocket, :path, :addr, :peeraddr, :send_io, :recv_io, :recvfrom
+			
+			include Peer
 		end
 		
 		class UNIXServer < UNIXSocket

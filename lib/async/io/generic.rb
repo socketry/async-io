@@ -117,6 +117,10 @@ module Async
 				true
 			end
 			
+			def connected?
+				!@io.closed?
+			end
+			
 			protected
 			
 			def async_send(*args)

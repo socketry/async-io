@@ -63,6 +63,8 @@ RSpec.describe Async::IO::SSLSocket do
 				
 				reactor.async do
 					client_endpoint.connect do |client|
+						expect(client).to be_connected
+						
 						client.write(data)
 						
 						expect(client.read(512)).to be == data

@@ -36,8 +36,6 @@ module Async
 			alias syswrite write
 			alias sysread read
 			
-			# It's hard to know what #to_io / #io should do. So, they are omitted.
-			
 			def self.connect(socket, context, hostname = nil, &block)
 				client = self.wrap(socket, context)
 				
@@ -71,6 +69,8 @@ module Async
 			def remote_address
 				@io.to_io.remote_address
 			end
+			
+			include Peer
 			
 			def self.wrap(socket, context)
 				io = @wrapped_klass.new(socket.to_io, context)

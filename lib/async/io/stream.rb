@@ -137,7 +137,11 @@ module Async
 				
 				flush
 			end
-
+			
+			def connected?
+				@io.connected?
+			end
+			
 			def closed?
 				@io.closed?
 			end

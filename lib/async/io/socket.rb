@@ -23,6 +23,20 @@ require_relative 'generic'
 
 module Async
 	module IO
+		module Peer
+			# Is it likely that the socket is still connected?
+			# May return false positive, but won't return false negative.
+			def connected?
+				return false if @io.closed?
+				
+				# If we can wait for the socket to become readable, we know that the socket may still be open.
+				result = to_io.recv_nonblock(1, Socket::MSG_PEEK, exception: false)
+				
+				# Either there was some data available, or we can wait to see if there is data avaialble.
+				return !result.empty? || result == :wait_readable
+			end
+		end
+		
 		class BasicSocket < Generic
 			wraps ::BasicSocket, :setsockopt, :connect_address, :close_read, :close_write, :local_address, :remote_address, :do_not_reverse_lookup, :do_not_reverse_lookup=, :shutdown, :getsockopt, :getsockname, :getpeername, :getpeereid
 			
@@ -35,6 +49,8 @@ module Async
 			def type
 				self.local_address.socktype
 			end
+			
+			include Peer
 		end
 		
 		module Server

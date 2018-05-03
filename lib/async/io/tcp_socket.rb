@@ -53,6 +53,8 @@ module Async
 				alias open new
 			end
 			
+			include Peer
+			
 			attr :buffer
 			
 			def_delegators :@buffer, :gets, :puts, :flush
