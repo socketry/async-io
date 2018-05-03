@@ -54,6 +54,10 @@ module Async
 				@endpoint = endpoint
 			end
 			
+			def close
+				@wrappers.each(&:close)
+			end
+			
 			def bind
 				task = Async::Task.current
 				
