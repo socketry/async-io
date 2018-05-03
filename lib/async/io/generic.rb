@@ -119,68 +119,17 @@ module Async
 			
 			protected
 			
-			if RUBY_ENGINE == "ruby" and RUBY_VERSION >= "2.3"
-				def async_send(*args)
-					async do
-						@io.__send__(*args, exception: false)
-					end
-				rescue Errno::EPROTOTYPE
-					raise Errno::EPIPE
-				end
-				
-				def async
-					while true
-						result = yield
-						
-						case result
-						when :wait_readable
-							wait_readable
-						when :wait_writable
-							wait_writable
-						else
-							return result
-						end
-					end
-				end
-			elsif RUBY_ENGINE == "ruby" and RUBY_VERSION >= "2.1"
-				def async_send(*args)
-					async do
-						@io.__send__(*args)
-					end
-				end
-				
-				def async
-					while true
-						begin
-							return yield
-						rescue ::IO::WaitReadable, ::IO::EAGAINWaitReadable
-							wait_readable
-						rescue ::IO::WaitWritable, ::IO::EAGAINWaitWritable
-							wait_writable
-						rescue Errno::EPROTOTYPE
-							raise Errno::EPIPE
-						end
-					end
-				end
-			else
-				# This is also correct for Rubinius.
-				def async_send(*args)
-					async do
-						@io.__send__(*args)
-					end
-				end
-				
-				def async
-					while true
-						begin
-							return yield
-						rescue ::IO::WaitReadable
-							wait_readable
-						rescue ::IO::WaitWritable
-							wait_writable
-						rescue Errno::EPROTOTYPE
-							raise Errno::EPIPE
-						end
+			def async_send(*args)
+				while true
+					result = @io.__send__(*args, exception: false)
+					
+					case result
+					when :wait_readable
+						wait_readable
+					when :wait_writable
+						wait_writable
+					else
+						return result
 					end
 				end
 			end
