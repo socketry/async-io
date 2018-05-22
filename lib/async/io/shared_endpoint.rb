@@ -100,8 +100,8 @@ module Async
 				end
 			end
 			
-			def inspect
-				"\#<#{self.class} #{@endpoint.inspect}>"
+			def to_s
+				"\#<#{self.class} #{@wrappers.count} descriptors for #{@endpoint}>"
 			end
 		end
 	end
