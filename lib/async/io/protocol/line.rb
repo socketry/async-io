@@ -24,7 +24,7 @@ module Async
 	module IO
 		module Protocol
 			class Line
-				def initialize(stream, eol = $\)
+				def initialize(stream, eol = $/)
 					@stream = stream
 					@eol = eol
 				end

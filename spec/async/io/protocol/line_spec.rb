@@ -23,11 +23,19 @@ require 'async/io/protocol/line'
 RSpec.describe Async::IO::Protocol::Line do
 	let(:io) {StringIO.new}
 	let(:stream) {Async::IO::Stream.new(io)}
-	let(:protocol) {described_class.new(stream, "\n")}
+	subject {described_class.new(stream, "\n")}
+	
+	context "default line ending" do
+		subject {described_class.new(stream)}
+		
+		it "should have default eol terminator" do
+			expect(subject.eol).to_not be_nil
+		end
+	end
 	
 	describe '#write_lines' do
 		it "should write line" do
-			protocol.write_lines "Hello World"
+			subject.write_lines "Hello World"
 			stream.flush
 			
 			expect(io.string).to be == "Hello World\n"
@@ -41,11 +49,11 @@ RSpec.describe Async::IO::Protocol::Line do
 		end
 		
 		it "should read one line" do
-			expect(protocol.read_line).to be == "Hello World"
+			expect(subject.read_line).to be == "Hello World"
 		end
 		
 		it "should be binary encoding" do
-			expect(protocol.read_line.encoding).to be == Encoding::BINARY
+			expect(subject.read_line.encoding).to be == Encoding::BINARY
 		end
 	end
 	
@@ -56,11 +64,11 @@ RSpec.describe Async::IO::Protocol::Line do
 		end
 		
 		it "should read multiple lines" do
-			expect(protocol.read_lines).to be == ["Hello", "World"]
+			expect(subject.read_lines).to be == ["Hello", "World"]
 		end
 		
 		it "should be binary encoding" do
-			expect(protocol.read_lines.first.encoding).to be == Encoding::BINARY
+			expect(subject.read_lines.first.encoding).to be == Encoding::BINARY
 		end
 	end
 end
