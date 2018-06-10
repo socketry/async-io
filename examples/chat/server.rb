@@ -23,7 +23,6 @@ end
 
 class Server
 	def initialize(endpoint)
-		@endpoint = endpoint
 		@users = Set.new
 	end
 	
@@ -61,9 +60,9 @@ class Server
 		broadcast("#{user} has disconnected: #{reason}")
 	end
 	
-	def run
+	def run(endpoint)
 		Async::Reactor.run do |task|
-			@endpoint.accept do |peer|
+			endpoint.accept do |peer|
 				stream = Async::IO::Stream.new(peer)
 				user = User.new(stream)
 				
@@ -75,7 +74,8 @@ class Server
 	end
 end
 
-endpoint = Async::IO::Endpoint.parse(ARGV.pop || "tcp://localhost:7138")
-server = Server.new(endpoint)
 
-server.run
+server = Server.new
+
+endpoint = Async::IO::Endpoint.parse(ARGV.pop || "tcp://localhost:7138")
+server.run(endpoint)
