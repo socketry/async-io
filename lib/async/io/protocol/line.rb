@@ -45,6 +45,8 @@ module Async
 							@stream.write(@eol)
 						end
 					end
+					
+					@stream.flush
 				end
 				
 				def read_line

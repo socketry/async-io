@@ -36,7 +36,6 @@ RSpec.describe Async::IO::Protocol::Line do
 	describe '#write_lines' do
 		it "should write line" do
 			subject.write_lines "Hello World"
-			stream.flush
 			
 			expect(io.string).to be == "Hello World\n"
 		end
