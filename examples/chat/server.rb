@@ -22,7 +22,7 @@ class User < Async::IO::Protocol::Line
 end
 
 class Server
-	def initialize(endpoint)
+	def initialize
 		@users = Set.new
 	end
 	
@@ -74,7 +74,8 @@ class Server
 	end
 end
 
-
+Async.logger.level = Logger::INFO
+Async.logger.info("Starting server...")
 server = Server.new
 
 endpoint = Async::IO::Endpoint.parse(ARGV.pop || "tcp://localhost:7138")
