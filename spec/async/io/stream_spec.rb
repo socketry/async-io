@@ -21,6 +21,8 @@
 require 'async/io/stream'
 
 RSpec.describe Async::IO::Stream do
+	include_context Async::RSpec::Memory
+	
 	let(:io) {StringIO.new}
 	let(:stream) {Async::IO::Stream.new(io)}
 	
@@ -46,6 +48,16 @@ RSpec.describe Async::IO::Stream do
 			
 			expect(stream.read(20)).to be == "o World"
 			expect(stream).to be_eof
+		end
+		
+		context "with large content" do
+			let!(:io) { StringIO.new("a" * 5*1024*1024) }
+			
+			it "allocates expected amount of bytes" do
+				expect do
+					stream.read(16*1024).clear until stream.eof?
+				end.to limit_allocations(size: 100*1024)
+			end
 		end
 	end
 	
@@ -95,6 +107,16 @@ RSpec.describe Async::IO::Stream do
 			expect(io).to receive(:read).and_call_original.once
 			
 			expect(stream.read_partial(11)).to be == "Hello World"
+		end
+		
+		context "with large content" do
+			let!(:io) { StringIO.new("a" * 5*1024*1024) }
+			
+			it "allocates expected amount of bytes" do
+				expect do
+					stream.read_partial(16*1024).clear until stream.eof?
+				end.to limit_allocations(size: 100*1024)
+			end
 		end
 	end
 	

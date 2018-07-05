@@ -38,6 +38,7 @@ module Async
 				@block_size = block_size
 				
 				@read_buffer = BinaryString.new
+				@output_buffer = BinaryString.new
 				@write_buffer = BinaryString.new
 			end
 			
@@ -180,19 +181,14 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer
-				# Can we read directly into the buffer? (Ruby doesn't support append, only replace):
-				if @read_buffer.empty?
-					if @io.read(@block_size, @read_buffer)
-						return true
-					end
-				elsif chunk = @io.read(@block_size)
+				if chunk = @io.read(@block_size, @output_buffer)
 					@read_buffer << chunk
 					return true
+				else
+					# We didn't read anything, so we must be at eof:
+					@eof = true
+					return false
 				end
-				
-				# We didn't read anything, so we must be at eof:
-				@eof = true
-				return false
 			end
 
 			# Consumes at most `size` bytes from the buffer.
@@ -205,8 +201,8 @@ module Async
 				
 				if size == nil || size >= @read_buffer.size
 					# Consume the entire read buffer:
-					result = @read_buffer.dup
-					@read_buffer.clear
+					result = @read_buffer
+					@read_buffer = BinaryString.new
 				else
 					# Consume only part of the read buffer:
 					result = @read_buffer.slice!(0, size)
