@@ -62,8 +62,6 @@ RSpec.describe Async::IO::Stream do
 	end
 	
 	describe '#read_until' do
-		include_context Async::RSpec::Memory
-		
 		it "can read a line" do
 			io.write("hello\nworld\n")
 			io.seek(0)
@@ -73,13 +71,14 @@ RSpec.describe Async::IO::Stream do
 			expect(stream.read_until("\n")).to be_nil
 		end
 		
-		it "minimises allocations" do
-			io.write("hello\nworld\n")
-			io.seek(0)
+		context "with large content" do
+			let!(:io) { StringIO.new("a" * 5*1024*1024 + "b") }
 			
-			expect do
-				stream.read_until("\n")
-			end.to limit_allocations(String => 3)
+			it "allocates expected amount of bytes" do
+				expect do
+					stream.read_until("b").clear
+				end.to limit_allocations(size: 100*1024)
+			end
 		end
 	end
 	
