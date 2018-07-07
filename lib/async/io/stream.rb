@@ -38,8 +38,10 @@ module Async
 				@block_size = block_size
 				
 				@read_buffer = BinaryString.new
-				@output_buffer = BinaryString.new
 				@write_buffer = BinaryString.new
+				
+				# Used as destination buffer for underlying reads.
+				@input_buffer = BinaryString.new
 			end
 			
 			attr :io
@@ -181,7 +183,9 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer
-				if chunk = @io.read(@block_size, @output_buffer)
+				if @read_buffer.empty? and @io.read(@block_size, @read_buffer)
+					return true
+				elsif chunk = @io.read(@block_size, @input_buffer)
 					@read_buffer << chunk
 					return true
 				else
