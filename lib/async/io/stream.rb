@@ -208,8 +208,12 @@ module Async
 					result = @read_buffer
 					@read_buffer = BinaryString.new
 				else
-					# Consume only part of the read buffer:
-					result = @read_buffer.slice!(0, size)
+					# We know that we are not going to reuse the original buffer.
+					# But byteslice will generate a hidden copy. So let's freeze it first:
+					@read_buffer.freeze
+					
+					result = @read_buffer.byteslice(0, size)
+					@read_buffer = @read_buffer.byteslice(size..-1)
 				end
 				
 				return result
