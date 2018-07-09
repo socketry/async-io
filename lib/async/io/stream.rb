@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'binary_string'
+require_relative 'buffer'
 require_relative 'generic'
 
 module Async
@@ -37,11 +37,11 @@ module Async
 				
 				@block_size = block_size
 				
-				@read_buffer = BinaryString.new
-				@write_buffer = BinaryString.new
+				@read_buffer = Buffer.new
+				@write_buffer = Buffer.new
 				
 				# Used as destination buffer for underlying reads.
-				@input_buffer = BinaryString.new
+				@input_buffer = Buffer.new
 			end
 			
 			attr :io
@@ -52,9 +52,17 @@ module Async
 				return '' if size == 0
 				
 				if size
-					fill_read_buffer until @eof or @read_buffer.size >= size
+					until @eof or @read_buffer.size >= size
+						# Compute the amount of data we need to read from the underlying stream:
+						read_size = size - @read_buffer.bytesize
+						
+						# Don't read less than @block_size to avoid lots of small reads:
+						fill_read_buffer(read_size > @block_size ? read_size : @block_size)
+					end
 				else
-					fill_read_buffer until @eof
+					until @eof
+						fill_read_buffer
+					end
 				end
 				
 				return consume_read_buffer(size)
@@ -88,7 +96,7 @@ module Async
 			end
 			
 			def peek
-				until yield(@read_buffer) || @eof
+				until yield(@read_buffer) or @eof
 					fill_read_buffer
 				end
 			end
@@ -182,10 +190,10 @@ module Async
 			private
 			
 			# Fills the buffer from the underlying stream.
-			def fill_read_buffer
-				if @read_buffer.empty? and @io.read(@block_size, @read_buffer)
+			def fill_read_buffer(size = @block_size)
+				if @read_buffer.empty? and @io.read(size, @read_buffer)
 					return true
-				elsif chunk = @io.read(@block_size, @input_buffer)
+				elsif chunk = @io.read(size, @input_buffer)
 					@read_buffer << chunk
 					return true
 				else
@@ -203,17 +211,20 @@ module Async
 				
 				result = nil
 				
-				if size == nil || size >= @read_buffer.size
+				if size.nil? or size >= @read_buffer.size
 					# Consume the entire read buffer:
 					result = @read_buffer
-					@read_buffer = BinaryString.new
+					@read_buffer = Buffer.new
 				else
+					# This approach uses more memory.
+					# result = @read_buffer.slice!(0, size)
+					
 					# We know that we are not going to reuse the original buffer.
 					# But byteslice will generate a hidden copy. So let's freeze it first:
 					@read_buffer.freeze
 					
 					result = @read_buffer.byteslice(0, size)
-					@read_buffer = @read_buffer.byteslice(size..-1)
+					@read_buffer = @read_buffer.byteslice(size, @read_buffer.bytesize)
 				end
 				
 				return result

@@ -23,6 +23,6 @@ measure_memory("Slice! from start to middle") do
 end # => 7.5 MB
 
 measure_memory("Byte slice into two halves") do
-	head = string.byteslice(0, string.bytesize / 2)
-	remainder = string.byteslice(string.bytesize / 2, string.bytesize)
+	head = string.byteslice(0, string.bytesize / 2) # 2.5 MB
+	remainder = string.byteslice(string.bytesize / 2, string.bytesize) # Shared
 end # 2.5 MB

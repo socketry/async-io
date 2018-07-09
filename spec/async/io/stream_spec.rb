@@ -19,12 +19,15 @@
 # THE SOFTWARE.
 
 require 'async/io/stream'
+require 'tempfile'
 
 RSpec.describe Async::IO::Stream do
 	include_context Async::RSpec::Memory
+	include_context Async::RSpec::Reactor
 	
-	let(:io) {StringIO.new}
-	let(:stream) {Async::IO::Stream.new(io)}
+	let!(:stream) {Async::IO::Stream.new(File.buffer)}
+	let(:io) {stream.io}
+	after(:each) {stream.close}
 	
 	describe '#read' do
 		it "should read everything" do
@@ -51,12 +54,20 @@ RSpec.describe Async::IO::Stream do
 		end
 		
 		context "with large content" do
-			let!(:io) { StringIO.new("a" * 5*1024*1024) }
-			
 			it "allocates expected amount of bytes" do
+				io.write("." * 16*1024)
+				io.seek(0)
+				
+				buffer = nil
+				
 				expect do
-					stream.read(16*1024).clear until stream.eof?
-				end.to limit_allocations(size: 100*1024)
+					# The read buffer is already allocated, and it will be resized to fit the incoming data. It will be swapped with an empty buffer.
+					buffer = stream.read(16*1024)
+				end.to limit_allocations.of(String, count: 1, size: 0)
+				
+				expect(buffer.size).to be == 16*1024
+				
+				io.close
 			end
 		end
 	end
@@ -72,12 +83,10 @@ RSpec.describe Async::IO::Stream do
 		end
 		
 		context "with large content" do
-			let!(:io) { StringIO.new("a" * 5*1024*1024 + "b") }
-			
 			it "allocates expected amount of bytes" do
 				expect do
-					stream.read_until("b").clear
-				end.to limit_allocations(size: 100*1024)
+					stream.read_until("b")
+				end.to limit_allocations.of(String, size: 0, count: 1)
 			end
 		end
 	end
@@ -99,22 +108,38 @@ RSpec.describe Async::IO::Stream do
 	end
 	
 	describe '#read_partial' do
-		it "should avoid calling read" do
-			io.write "Hello World" * 1024
+		before(:each) do
+			io.write "Hello World!" * 1024
 			io.seek(0)
-			
+		end
+		
+		it "should avoid calling read" do
 			expect(io).to receive(:read).and_call_original.once
 			
-			expect(stream.read_partial(11)).to be == "Hello World"
+			expect(stream.read_partial(12)).to be == "Hello World!"
 		end
 		
 		context "with large content" do
-			let!(:io) { StringIO.new("a" * 5*1024*1024) }
+			it "allocates only the amount required" do
+				expect do
+					stream.read(4*1024)
+				end.to limit_allocations.of(String, count: 2, size: 4*1024+1)
+			end
+			
+			it "allocates exact number of bytes being read" do
+				expect do
+					stream.read(16*1024)
+				end.to limit_allocations.of(String, count: 1, size: 0)
+			end
 			
 			it "allocates expected amount of bytes" do
+				buffer = nil
+				
 				expect do
-					stream.read_partial(16*1024).clear until stream.eof?
-				end.to limit_allocations(size: 100*1024)
+					buffer = stream.read_partial
+				end.to limit_allocations.of(String, count: 1)
+				
+				expect(buffer.size).to be == stream.block_size
 			end
 		end
 	end
@@ -126,7 +151,9 @@ RSpec.describe Async::IO::Stream do
 			stream.write "Hello World\n"
 			stream.flush
 			
-			expect(io.string).to be == "Hello World\n"
+			io.seek(0)
+			
+			expect(stream.read).to be == "Hello World\n"
 		end
 	end
 	
