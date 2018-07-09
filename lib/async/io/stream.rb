@@ -89,8 +89,9 @@ module Async
 					return unless fill_read_buffer
 				end
 				
-				matched = @read_buffer.slice!(0, index)
-				@read_buffer.slice!(0, pattern.bytesize)
+				@read_buffer.freeze
+				matched = @read_buffer.byteslice(0, index)
+				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
 				
 				return matched
 			end
