@@ -19,15 +19,15 @@
 # THE SOFTWARE.
 
 require 'async/io/stream'
-require 'tempfile'
+require 'async/rspec/buffer'
 
 RSpec.describe Async::IO::Stream do
+	include_context Async::RSpec::Buffer
 	include_context Async::RSpec::Memory
 	include_context Async::RSpec::Reactor
 	
-	let!(:stream) {Async::IO::Stream.new(File.buffer)}
+	let!(:stream) {Async::IO::Stream.new(buffer)}
 	let(:io) {stream.io}
-	after(:each) {stream.close}
 	
 	describe '#read' do
 		it "should read everything" do

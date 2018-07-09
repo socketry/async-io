@@ -23,7 +23,6 @@ require "async/io"
 require "async/rspec"
 
 require_relative 'addrinfo'
-require_relative 'file'
 
 RSpec.configure do |config|
 	# Enable flags like --only-failures and --next-failure

@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
 	spec.has_rdoc      = "yard"
 
 	spec.add_dependency "async", "~> 1.3"
-	spec.add_development_dependency "async-rspec", "~> 1.9"
+	spec.add_development_dependency "async-rspec", "~> 1.10"
 
 	spec.required_ruby_version = '~> 2.3'
 
