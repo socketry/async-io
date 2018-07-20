@@ -29,6 +29,10 @@ module Async
 					@eol = eol
 				end
 				
+				def closed?
+					@stream.closed?
+				end
+				
 				def close
 					@stream.close
 				end
