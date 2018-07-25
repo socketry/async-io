@@ -1,4 +1,4 @@
-# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,58 +18,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'generic'
+require_relative '../stream'
 
 module Async
 	module IO
 		module Protocol
-			class Line < Generic
-				def initialize(stream, eol = $/)
-					super(stream)
-					
-					@eol = eol
+			class Generic
+				def initialize(stream)
+					@stream = stream
 				end
 				
-				attr :eol
-				
-				def write_lines(*args)
-					if args.empty?
-						@stream.write(@eol)
-					else
-						args.each do |arg|
-							@stream.write(arg)
-							@stream.write(@eol)
-						end
-					end
-					
-					@stream.flush
+				def closed?
+					@stream.closed?
 				end
 				
-				def read_line
-					@stream.read_until(@eol) or @stream.eof!
+				def close
+					@stream.close
 				end
 				
-				def peek_line
-					@stream.peek do |read_buffer|
-						if index = read_buffer.index(@eol)
-							return read_buffer.slice(0, index)
-						end
-					end
-					
-					raise EOFError
-				end
-				
-				def each_line
-					return to_enum(:each_line) unless block_given?
-					
-					while line = @stream.read_until(@eol)
-						yield line
-					end
-				end
-				
-				def read_lines
-					@stream.read.split(@eol)
-				end
+				attr :stream
 			end
 		end
 	end
