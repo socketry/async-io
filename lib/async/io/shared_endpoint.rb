@@ -50,9 +50,12 @@ module Async
 			end
 			
 			def initialize(endpoint, wrappers)
-				@wrappers = wrappers
 				@endpoint = endpoint
+				@wrappers = wrappers
 			end
+			
+			attr :endpoint
+			attr :wrappers
 			
 			def close
 				@wrappers.each(&:close)

@@ -94,7 +94,7 @@ module Async
 				@context = context
 			end
 			
-			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close
+			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=
 			
 			attr :server
 			attr :context

@@ -18,44 +18,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'address'
-require_relative 'socket'
+require 'async/io/host_endpoint'
+require 'async/io/shared_endpoint'
 
-require 'uri'
-
-module Async
-	module IO
-		# Endpoints represent a way of connecting or binding to an address.
-		class Endpoint
-			def initialize(**options)
-				@options = options
-			end
+RSpec.describe Async::IO::SharedEndpoint do
+	include_context Async::RSpec::Reactor
+	
+	describe '#bound' do
+		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123)}
+		
+		it "can bind to shared endpoint" do
+			bound_endpoint = described_class.bound(endpoint)
 			
-			attr :options
+			expect(bound_endpoint.wrappers).to_not be_empty
+			expect(bound_endpoint.wrappers.first).to be_a Async::IO::Socket
 			
-			def hostname
-				@options[:hostname]
-			end
+			bound_endpoint.close
+		end
+	end
+	
+	describe '#connected' do
+		let(:endpoint) {Async::IO::Endpoint.tcp("www.google.com", 80)}
+		
+		it "can connect to shared endpoint" do
+			connected_endpoint = described_class.connected(endpoint)
 			
-			def each
-				return to_enum unless block_given?
-				
-				yield self
-			end
+			expect(connected_endpoint.wrappers).to_not be_empty
+			expect(connected_endpoint.wrappers.first).to be_a Async::IO::Socket
 			
-			def accept(backlog = Socket::SOMAXCONN, &block)
-				bind do |server|
-					server.listen(backlog)
-					
-					server.accept_each(&block)
-				end
-			end
-			
-			def self.parse(string, **options)
-				uri = URI.parse(string)
-				
-				self.send(uri.scheme, uri.host, uri.port, **options)
-			end
+			connected_endpoint.close
 		end
 	end
 end

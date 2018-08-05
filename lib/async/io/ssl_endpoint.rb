@@ -62,12 +62,22 @@ module Async
 				return context
 			end
 			
+			# Connect to the underlying endpoint and establish a SSL connection.
+			# @yield [Socket] the socket which is being connected
+			# @return [Socket] the connected socket
 			def bind
-				@endpoint.bind do |server|
-					yield SSLServer.new(server, context)
+				if block_given?
+					@endpoint.bind do |server|
+						yield SSLServer.new(server, context)
+					end
+				else
+					return SSLServer.new(@endpoint.bind, context)
 				end
 			end
 			
+			# Connect to the underlying endpoint and establish a SSL connection.
+			# @yield [Socket] the socket which is being connected
+			# @return [Socket] the connected socket
 			def connect(&block)
 				SSLSocket.connect(@endpoint.connect, context, hostname, &block)
 			end

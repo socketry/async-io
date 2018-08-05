@@ -37,10 +37,14 @@ module Async
 				@specification.first
 			end
 			
+			# Try to connect to the given host by connecting to each address in sequence until a connection is made.
+			# @yield [Socket] the socket which is being connected, may be invoked more than once
+			# @return [Socket] the connected socket
+			# @raise if no connection could complete successfully
 			def connect(&block)
 				last_error = nil
 				
-				Addrinfo.foreach(*@specification).each do |address|
+				Addrinfo.foreach(*@specification) do |address|
 					begin
 						return Socket.connect(address, **@options, &block)
 					rescue
@@ -51,16 +55,20 @@ module Async
 				raise last_error
 			end
 			
+			# Invokes the given block for every address which can be bound to.
+			# @yield [Socket] the bound socket
+			# @return [Array<Socket>] an array of bound sockets
 			def bind(&block)
-				Addrinfo.foreach(*@specification) do |address|
+				Addrinfo.foreach(*@specification).collect do |address|
 					Socket.bind(address, **@options, &block)
 				end
 			end
 			
+			# @yield [AddressEndpoint] address endpoints by resolving the given host specification
 			def each
 				return to_enum unless block_given?
 				
-				Addrinfo.foreach(*@specification).each do |address|
+				Addrinfo.foreach(*@specification) do |address|
 					yield AddressEndpoint.new(address, **@options)
 				end
 			end

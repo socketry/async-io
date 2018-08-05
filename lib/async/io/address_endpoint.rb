@@ -38,10 +38,15 @@ module Async
 			attr :address
 			attr :options
 			
+			# Bind a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
+			# @yield [Socket] the bound socket
+			# @return [Socket] the bound socket
 			def bind(&block)
 				Socket.bind(@address, **@options, &block)
 			end
 			
+			# Connects a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
+			# @return [Socket] the connected socket
 			def connect(&block)
 				Socket.connect(@address, **@options, &block)
 			end
