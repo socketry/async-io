@@ -35,7 +35,7 @@ module Async
 			end
 			
 			def hostname
-				@options.fetch(:hostname) {@endpoint.hostname}
+				@options[:hostname] || @endpoint.hostname
 			end
 			
 			attr :endpoint
@@ -95,8 +95,8 @@ module Async
 		SecureEndpoint = SSLEndpoint
 		
 		class Endpoint
-			def self.ssl(*args, ssl_context:, hostname: nil, **options)
-				SSLEndpoint.new(self.tcp(*args, **options), ssl_context: ssl_context, hostname: nil)
+			def self.ssl(*args, ssl_context: nil, hostname: nil, **options)
+				SSLEndpoint.new(self.tcp(*args, **options), ssl_context: ssl_context, hostname: hostname)
 			end
 		end
 	end
