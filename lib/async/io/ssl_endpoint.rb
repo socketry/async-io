@@ -95,8 +95,8 @@ module Async
 		SecureEndpoint = SSLEndpoint
 		
 		class Endpoint
-			def self.ssl(*args, **options)
-				SSLEndpoint.new(self.tcp(*args, **options), **options)
+			def self.ssl(*args, ssl_context:, hostname: nil, **options)
+				SSLEndpoint.new(self.tcp(*args, **options), ssl_context: ssl_context, hostname: nil)
 			end
 		end
 	end
