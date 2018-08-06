@@ -28,9 +28,7 @@ module Async
 			end
 			
 			def << string
-				super
-				
-				force_encoding(Encoding::BINARY)
+				super(string.b)
 			end
 			
 			alias concat <<
