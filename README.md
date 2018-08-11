@@ -71,6 +71,22 @@ Async::Reactor.run do
 end
 ```
 
+### Timeouts
+
+Timeouts add a temporal limit to the execution of your code. If the IO doesn't respond in time, it will fail. Timeouts are high level concerns and you generally shouldn't use them except at the very highest level of your program.
+
+```ruby
+message = task.timeout(5) do
+	begin
+		peer.read(512)
+	rescue Async::TimeoutError
+		nil # The timeout was triggered.
+	end
+end
+```
+
+Any `yield` operation can cause a timeout to trigger. Non-`async` functions might not timeout because they are outside the scope of `async`.
+
 ## Contributing
 
 1. Fork it
