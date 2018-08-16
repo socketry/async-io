@@ -17,4 +17,6 @@ group :test do
 	
 	gem 'simplecov'
 	gem 'coveralls', require: false
+	
+	gem 'async-container'
 end
