@@ -94,6 +94,10 @@ module Async
 				@context = context
 			end
 			
+			def dup
+				self.class.new(@server.dup, @context)
+			end
+			
 			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=
 			
 			attr :server
