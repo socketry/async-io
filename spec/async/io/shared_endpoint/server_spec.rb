@@ -41,8 +41,8 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 		end.result
 	end
 	
-	it "can bind in #{container_class} container" do
-		container = container_class.new(concurrency: 1) do
+	it "can use bound endpoint in container" do
+		container = container_class.new(concurrency: 8) do
 			bound_endpoint.accept do |peer|
 				peer.write "Hello World"
 				peer.close
