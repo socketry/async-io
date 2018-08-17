@@ -31,8 +31,8 @@ RSpec.describe Async::IO::SSLServer do
 		include_context Async::RSpec::SSL::ValidCertificate
 		
 		let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6780, reuse_port: true)}
-		let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
-		let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
+		let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context)}
+		let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context)}
 		
 		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
 		
@@ -67,9 +67,9 @@ RSpec.describe Async::IO::SSLServer do
 		include_context Async::RSpec::SSL::HostCertificates
 		
 		let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6782, reuse_port: true)}
-		let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
-		let(:valid_client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, hostname: 'example.com', ssl_context: client_context)}
-		let(:invalid_client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, hostname: 'fleeb.com', ssl_context: client_context)}
+		let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context)}
+		let(:valid_client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, hostname: 'example.com', ssl_context: client_context)}
+		let(:invalid_client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, hostname: 'fleeb.com', ssl_context: client_context)}
 		
 		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
 		

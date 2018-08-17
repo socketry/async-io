@@ -32,8 +32,8 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	include_context Async::RSpec::SSL::ValidCertificate
 	
 	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6781, reuse_port: true)}
-	let(:server_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: server_context)}
-	let(:client_endpoint) {Async::IO::SecureEndpoint.new(endpoint, ssl_context: client_context)}
+	let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context)}
+	let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context)}
 	
 	let!(:bound_endpoint) do
 		Async::Reactor.run do
@@ -42,7 +42,7 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	end
 	
 	it "can use bound endpoint in container" do
-		container = container_class.new(concurrency: 8) do
+		container = container_class.new(concurrency: 1) do
 			bound_endpoint.accept do |peer|
 				peer.write "Hello World"
 				peer.close

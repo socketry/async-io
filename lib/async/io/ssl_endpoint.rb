@@ -28,6 +28,12 @@ module Async
 				super(**options)
 				
 				@endpoint = endpoint
+				
+				if ssl_context = options[:ssl_context]
+					@context = build_context(ssl_context)
+				else
+					@context = nil
+				end
 			end
 			
 			def to_s
@@ -45,21 +51,19 @@ module Async
 				@options[:ssl_params]
 			end
 			
-			def context
-				if context = @options[:ssl_context]
-					if params = self.params
-						context = context.dup
-						context.set_params(params)
-					end
-				else
-					context = ::OpenSSL::SSL::SSLContext.new
-					
-					if params = self.params
-						context.set_params(params)
-					end
+			def build_context(context = ::OpenSSL::SSL::SSLContext.new)
+				if params = self.params
+					context.set_params(params)
 				end
 				
+				context.setup
+				context.freeze
+				
 				return context
+			end
+			
+			def context
+				@context ||= build_context
 			end
 			
 			# Connect to the underlying endpoint and establish a SSL connection.
