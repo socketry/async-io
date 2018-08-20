@@ -115,7 +115,7 @@ module Async
 				return wrapper, address unless block_given?
 				
 				task.async do
-					task.annotate "accepting secure connection #{address}"
+					task.annotate "accepting secure connection #{address.inspect}"
 					
 					begin
 						# You want to do this in a nested async task or you might suffer from head-of-line blocking.
