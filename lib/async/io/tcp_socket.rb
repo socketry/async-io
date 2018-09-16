@@ -57,7 +57,7 @@ module Async
 			
 			attr :buffer
 			
-			def_delegators :@buffer, :gets, :puts, :flush
+			def_delegators :@buffer, :gets, :puts, :flush, :read
 		end
 		
 		# Asynchronous TCP server wrappper.
