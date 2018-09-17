@@ -28,6 +28,32 @@ module Async
 		class TCPSocket < IPSocket
 			wraps ::TCPSocket
 			
+			class StreamWrapper
+				def initialize(io)
+					@io = io
+				end
+				
+				def sync= value
+					@io.sync = value
+				end
+				
+				def close
+					@io.close
+				end
+				
+				def read(*args)
+					@io.sysread(*args)
+				end
+				
+				def write(*args)
+					@io.syswrite(*args)
+				end
+				
+				def flush
+					@io.flush
+				end
+			end
+			
 			def initialize(remote_host, remote_port = nil, local_host = nil, local_port = nil)
 				if remote_host.is_a? ::TCPSocket
 					super(remote_host)
@@ -38,6 +64,7 @@ module Async
 					# We do this unusual dance to avoid leaking an "open" socket instance.
 					socket = Socket.connect(remote_address, local_address)
 					fd = socket.fcntl(Fcntl::F_DUPFD)
+					Async.logger.debug(self) {"Connected to #{remote_address.inspect}: #{fd}"}
 					socket.close
 					
 					super(::TCPSocket.for_fd(fd))
@@ -46,7 +73,7 @@ module Async
 					# super(::TCPSocket.new(remote_host, remote_port, local_host, local_port))
 				end
 				
-				@buffer = Stream.new(self)
+				@buffer = Stream.new(StreamWrapper.new(self))
 			end
 			
 			class << self
@@ -57,7 +84,17 @@ module Async
 			
 			attr :buffer
 			
-			def_delegators :@buffer, :gets, :puts, :flush, :read
+			def_delegators :@buffer, :gets, :puts, :flush
+			
+			def write(*)
+				@buffer.flush
+				
+				super
+			end
+			
+			def read(size)
+				@buffer.read_partial(size)
+			end
 		end
 		
 		# Asynchronous TCP server wrappper.

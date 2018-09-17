@@ -123,7 +123,7 @@ module Async
 			# @param local_address [Addrinfo] The local address to bind to before connecting.
 			# @option protcol [Integer] The socket protocol to use.
 			def self.connect(remote_address, local_address = nil, reuse_port: false, task: Task.current, **options)
-				# Async.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
+				Async.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
 				
 				task.annotate "connecting to #{remote_address.inspect}"
 				
