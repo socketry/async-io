@@ -60,13 +60,17 @@ RSpec.describe Async::IO::TCPSocket do
 			expect(Async::IO::TCPSocket).to receive(:new).and_call_original
 			
 			expect do
-				HTTP.get('https://www.google.com', { socket_class: Wrap::TCPSocket, ssl_socket_class: Wrap::SSLSocket })
+				response = HTTP.get('https://www.google.com', { socket_class: Wrap::TCPSocket, ssl_socket_class: Wrap::SSLSocket })
+				response.flush
+				response.connection.close
 			end.to_not raise_error
 		end
 		
 		it "should fetch page when used as a drop-in replacement" do
 			expect(Async::IO::TCPSocket).to receive(:new).and_call_original
-				HTTP.get('https://www.google.com', { socket_class: Async::IO::TCPSocket, ssl_socket_class: Async::IO::SSLSocket })
+				response = HTTP.get('https://www.google.com', { socket_class: Async::IO::TCPSocket, ssl_socket_class: Async::IO::SSLSocket })
+				response.flush
+				response.connection.close
 			expect do
 			end.to_not raise_error
 		end
@@ -75,7 +79,9 @@ RSpec.describe Async::IO::TCPSocket do
 	describe "outside reactor" do
 		it "should fetch page" do
 			expect do
-				HTTP.get('https://www.google.com', { socket_class: Wrap::TCPSocket, ssl_socket_class: Wrap::SSLSocket })
+				response = HTTP.get('https://www.google.com', { socket_class: Wrap::TCPSocket, ssl_socket_class: Wrap::SSLSocket })
+				response.flush
+				response.connection.close
 			end.to_not raise_error
 		end
 	end
