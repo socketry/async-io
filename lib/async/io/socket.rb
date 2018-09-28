@@ -140,7 +140,7 @@ module Async
 				begin
 					wrapper.connect(remote_address.to_sockaddr)
 					task.annotate "connected to #{remote_address.inspect}"
-				rescue
+				rescue Exception
 					wrapper.close
 					raise
 				end
