@@ -26,7 +26,7 @@ require 'async/io/ssl_socket'
 
 # There are different ways to achieve this. This is really just a proof of concept.
 module Wrap
-	class TCPSocket
+	module TCPSocket
 		def self.new(*args)
 			if Async::Task.current?
 				Async::IO::TCPSocket.new(*args)
@@ -40,7 +40,7 @@ module Wrap
 		end
 	end
 	
-	class SSLSocket
+	module SSLSocket
 		def self.new(*args)
 			if Async::Task.current?
 				# wrap instead of new
@@ -61,7 +61,6 @@ RSpec.describe Async::IO::TCPSocket do
 			
 			expect do
 				response = HTTP.get('https://www.google.com', { socket_class: Wrap::TCPSocket, ssl_socket_class: Wrap::SSLSocket })
-				response.flush
 				response.connection.close
 			end.to_not raise_error
 		end
@@ -69,7 +68,6 @@ RSpec.describe Async::IO::TCPSocket do
 		it "should fetch page when used as a drop-in replacement" do
 			expect(Async::IO::TCPSocket).to receive(:new).and_call_original
 				response = HTTP.get('https://www.google.com', { socket_class: Async::IO::TCPSocket, ssl_socket_class: Async::IO::SSLSocket })
-				response.flush
 				response.connection.close
 			expect do
 			end.to_not raise_error
@@ -80,7 +78,6 @@ RSpec.describe Async::IO::TCPSocket do
 		it "should fetch page" do
 			expect do
 				response = HTTP.get('https://www.google.com', { socket_class: Wrap::TCPSocket, ssl_socket_class: Wrap::SSLSocket })
-				response.flush
 				response.connection.close
 			end.to_not raise_error
 		end
