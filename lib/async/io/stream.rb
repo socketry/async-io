@@ -79,10 +79,12 @@ module Async
 				return consume_read_buffer(size)
 			end
 			
+			alias readpartial read_partial
+			
 			# Efficiently read data from the stream until encountering pattern.
 			# @param pattern [String] The pattern to match.
 			# @return [String] The contents of the stream up until the pattern, which is consumed but not returned.
-			def read_until(pattern, offset = 0)
+			def read_until(pattern, offset = 0, chomp: true)
 				until index = @read_buffer.index(pattern, offset)
 					offset = @read_buffer.size
 					
@@ -90,7 +92,7 @@ module Async
 				end
 				
 				@read_buffer.freeze
-				matched = @read_buffer.byteslice(0, index)
+				matched = @read_buffer.byteslice(0, index+(chomp ? 0 : pattern.bytesize))
 				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
 				
 				return matched
@@ -136,10 +138,8 @@ module Async
 				end
 			end
 
-			def gets(separator = $/)
-				flush
-				
-				read_until(separator)
+			def gets(separator = $/, **options)
+				read_until(separator, **options)
 			end
 
 			def puts(*args, separator: $/)
