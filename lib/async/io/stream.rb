@@ -122,14 +122,14 @@ module Async
 				
 				return string.bytesize
 			end
-
+			
 			# Writes `string` to the stream and returns self.
 			def <<(string)
 				write(string)
 				
 				return self
 			end
-
+			
 			# Flushes buffered data to the stream.
 			def flush
 				unless @write_buffer.empty?
@@ -137,11 +137,11 @@ module Async
 					@write_buffer.clear
 				end
 			end
-
+			
 			def gets(separator = $/, **options)
 				read_until(separator, **options)
 			end
-
+			
 			def puts(*args, separator: $/)
 				args.each do |arg|
 					@write_buffer << arg << separator
@@ -171,7 +171,7 @@ module Async
 					@io.close
 				end
 			end
-
+			
 			# Returns true if the stream is at file which means there is no more data to be read.
 			def eof?
 				fill_read_buffer if !@eof && @read_buffer.empty?
@@ -203,7 +203,7 @@ module Async
 					return false
 				end
 			end
-
+			
 			# Consumes at most `size` bytes from the buffer.
 			# @param size [Integer|nil] The amount of data to consume. If nil, consume entire buffer.
 			def consume_read_buffer(size = nil)
