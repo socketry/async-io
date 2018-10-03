@@ -53,7 +53,7 @@ RSpec.describe Async::IO::Endpoint do
 	describe Async::IO::Endpoint.tcp('0.0.0.0', 0) do
 		it "should be a tcp binding" do
 			subject.bind do |server|
-				expect(server.local_address.ip_port).to be > 50000
+				expect(server.local_address.ip_port).to be > 10000
 			end
 		end
 	end

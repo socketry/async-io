@@ -64,7 +64,7 @@ RSpec.describe Async::IO::Socket do
 			address = Async::IO::Address.tcp('127.0.0.1', 0)
 			
 			Async::IO::Socket.bind(address) do |socket|
-				expect(socket.local_address.ip_port).to be > 50000
+				expect(socket.local_address.ip_port).to be > 10000
 				
 				expect(Async::Task.current.annotation).to include("#{socket.local_address.ip_port}")
 			end
