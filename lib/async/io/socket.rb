@@ -172,7 +172,7 @@ module Async
 				return wrapper unless block_given?
 				
 				task.async do |task|
-					task.annotate "binding to #{local_address.inspect}"
+					task.annotate "binding to #{wrapper.local_address.inspect}"
 					
 					begin
 						yield wrapper, task

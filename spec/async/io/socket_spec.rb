@@ -52,12 +52,22 @@ RSpec.describe Async::IO::Socket do
 	end
 	
 	describe '#bind' do
-		let(:address) {Async::IO::Address.tcp('127.0.0.1', 1)}
-		
 		it "should fail to bind to port < 1024" do
+			address = Async::IO::Address.tcp('127.0.0.1', 1)
+			
 			expect do
 				Async::IO::Socket.bind(address)
 			end.to raise_error(Errno::EACCES)
+		end
+		
+		it "can bind to port 0" do
+			address = Async::IO::Address.tcp('127.0.0.1', 0)
+			
+			Async::IO::Socket.bind(address) do |socket|
+				expect(socket.local_address.ip_port).to be > 50000
+				
+				expect(Async::Task.current.annotation).to include("#{socket.local_address.ip_port}")
+			end
 		end
 	end
 	
