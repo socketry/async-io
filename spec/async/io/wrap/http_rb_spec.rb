@@ -1,4 +1,5 @@
-# Copyright, 2018, by Thibaut Girka
+# Copyright, 2018, by Thibaut Girka.
+# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -41,13 +42,4 @@ RSpec.describe Async::IO do
 			end.to_not raise_error
 		end
 	end
-	
-	# describe "outside reactor" do
-	# 	it "should fetch page" do
-	# 		expect do
-	# 			response = HTTP.get('https://www.google.com', wrappers)
-	# 			response.connection.close
-	# 		end.to_not raise_error
-	# 	end
-	# end
 end
