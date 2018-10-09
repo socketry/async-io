@@ -19,4 +19,6 @@ group :test do
 	gem 'coveralls', require: false
 	
 	gem 'async-container'
+
+	gem 'http'
 end
