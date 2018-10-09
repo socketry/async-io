@@ -37,7 +37,7 @@ module Async
 			alias sysread read
 			
 			def self.connect(socket, context, hostname = nil, &block)
-				client = self.wrap(socket, context)
+				client = self.new(socket, context)
 				
 				# Used for SNI:
 				if hostname
@@ -72,16 +72,20 @@ module Async
 			
 			include Peer
 			
-			def self.wrap(socket, context)
-				io = @wrapped_klass.new(socket.to_io, context)
-				
-				# We detach the socket from the reactor, otherwise it's possible to add the file descriptor to the selector twice, which is bad.
-				socket.reactor = nil
-				
-				# This ensures that when the internal IO is closed, it also closes the internal socket:
-				io.sync_close = true
-				
-				return self.new(io, socket.reactor)
+			def initialize(socket, context)
+				if socket.is_a?(self.class.wrapped_klass)
+					super
+				else
+					io = self.class.wrapped_klass.new(socket.to_io, context)
+					
+					# We detach the socket from the reactor, otherwise it's possible to add the file descriptor to the selector twice, which is bad.
+					socket.reactor = nil
+					
+					# This ensures that when the internal IO is closed, it also closes the internal socket:
+					io.sync_close = true
+					
+					super(io, socket.reactor)
+				end
 			end
 		end
 		
@@ -110,7 +114,7 @@ module Async
 			def accept(task: Task.current)
 				peer, address = @server.accept
 				
-				wrapper = SSLSocket.wrap(peer, @context)
+				wrapper = SSLSocket.new(peer, @context)
 				
 				return wrapper, address unless block_given?
 				
