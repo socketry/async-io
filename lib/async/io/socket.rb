@@ -19,6 +19,8 @@
 # THE SOFTWARE.
 
 require 'socket'
+require 'async/task'
+
 require_relative 'generic'
 
 module Async
