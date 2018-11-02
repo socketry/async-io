@@ -36,6 +36,10 @@ module Async
 				
 				# Either there was some data available, or we can wait to see if there is data avaialble.
 				return !result.empty? || result == :wait_readable
+				
+			rescue Errno::ECONNRESET
+				# This might be thrown by recv_nonblock.
+				return false
 			end
 		end
 		
