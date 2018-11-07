@@ -19,6 +19,11 @@ end
 require "bundler/setup"
 require "async/io"
 
+if RUBY_ENGINE == "truffleruby"
+	warn "Workarounds for TruffleRuby enabled..."
+	require_relative 'truffle'
+end
+
 # Shared rspec helpers:
 require "async/rspec"
 
