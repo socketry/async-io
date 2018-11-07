@@ -128,13 +128,16 @@ module Async
 			# @param remote_address [Addrinfo] The remote address to connect to.
 			# @param local_address [Addrinfo] The local address to bind to before connecting.
 			# @option protcol [Integer] The socket protocol to use.
-			def self.connect(remote_address, local_address = nil, reuse_port: false, task: Task.current, **options)
+			def self.connect(remote_address, local_address = nil, reuse_port: nil, task: Task.current, **options)
 				Async.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
 				
 				task.annotate "connecting to #{remote_address.inspect}"
 				
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, reuse_port)
+					
+					if reuse_port
+						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
+					end
 					
 					if local_address
 						socket.bind(local_address.to_sockaddr)
@@ -166,12 +169,19 @@ module Async
 			# @param local_address [Address] The local address to bind to.
 			# @option protocol [Integer] The socket protocol to use.
 			# @option reuse_port [Boolean] Allow this port to be bound in multiple processes.
-			def self.bind(local_address, protocol: 0, reuse_port: false, task: Task.current, **options, &block)
+			def self.bind(local_address, protocol: 0, reuse_port: nil, reuse_address: true, task: Task.current, **options, &block)
 				Async.logger.debug(self) {"Binding to #{local_address.inspect}"}
 				
 				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, true)
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, true) if reuse_port
+					
+					if reuse_address
+						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
+					end
+					
+					if reuse_port
+						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, 1)
+					end
+					
 					socket.bind(local_address.to_sockaddr)
 				end
 				
