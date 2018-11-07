@@ -25,9 +25,11 @@ require_relative 'generic_examples'
 RSpec.describe Async::IO::Generic do
 	include_context Async::RSpec::Reactor
 	
+	CONSOLE_METHODS = [:beep, :cooked, :cooked!, :cursor, :cursor=, :echo=, :echo?,:getch, :getpass, :goto, :iflush, :ioflush, :noecho, :oflush,:pressed?, :raw, :raw!, :winsize, :winsize=]
+	
 	it_should_behave_like Async::IO::Generic, [
 		:bytes, :chars, :codepoints, :each, :each_byte, :each_char, :each_codepoint, :each_line, :getbyte, :getc, :gets, :lineno, :lineno=, :lines, :print, :printf, :putc, :puts, :readbyte, :readchar, :readline, :readlines, :ungetbyte, :ungetc
-	]
+	] + CONSOLE_METHODS
 	
 	let(:pipe) {IO.pipe}
 	let(:input) {Async::IO::Generic.new(pipe.first)}
