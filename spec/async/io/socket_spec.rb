@@ -71,14 +71,14 @@ RSpec.describe Async::IO::Socket do
 		end
 	end
 	
-	describe '#set_tcp_nodelay' do
+	describe '#sync' do
 		it "should set TCP_NODELAY" do
 			address = Async::IO::Address.tcp('127.0.0.1', 0)
 			
-			socket = Async::IO::Socket.wrap(::Socket::AF_INET, ::Socket::SOCK_STREAM, 0)
+			socket = Async::IO::Socket.wrap(::Socket::AF_INET, ::Socket::SOCK_STREAM, ::Socket::IPPROTO_TCP)
 			
-			socket.set_tcp_nodelay
-			expect(socket.tcp_nodelay).to be true
+			socket.sync = true
+			expect(socket.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY).bool).to be true
 			
 			socket.close
 		end

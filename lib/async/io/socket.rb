@@ -23,6 +23,8 @@ require 'async/task'
 
 require_relative 'generic'
 
+require 'pry'
+
 module Async
 	module IO
 		module Peer
@@ -42,18 +44,35 @@ module Async
 				return false
 			end
 			
-			# Best effort to set TCP_NODELAY. Swallows errors where possible.
-			def set_tcp_nodelay(value = 1)
-				self.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, value)
+			# Best effort to set *_NODELAY if it makes sense. Swallows errors where possible.
+			def sync=(value)
+				super
+				
+				case self.protocol
+				when 0, Socket::IPPROTO_TCP
+					self.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, value ? 1 : 0)
+				else
+					warn "Unsure how to sync=#{value} for #{self.protocol}!"
+				end
 			rescue Errno::EINVAL
 				# On Darwin, sometimes occurs when the connection is not yet fully formed. Empirically, TCP_NODELAY is enabled despite this result.
-			rescue Errno::EOPNOTSUPP
-				warn "Could not set TCP_NODELAY on #{self.inspect}, ignoring."
-				# Oh well, at least we tried?
 			end
 			
-			def tcp_nodelay
-				self.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY).bool
+			def sync
+				case self.protocol
+				when Socket::IPPROTO_TCP
+					self.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY).bool
+				else
+					true
+				end && super
+			end
+			
+			def type
+				self.local_address.socktype
+			end
+			
+			def protocol
+				self.local_address.protocol
 			end
 		end
 		
@@ -65,10 +84,6 @@ module Async
 			
 			wrap_blocking_method :sendmsg, :sendmsg_nonblock
 			wrap_blocking_method :send, :sendmsg_nonblock, invert: false
-			
-			def type
-				self.local_address.socktype
-			end
 			
 			include Peer
 		end
@@ -148,7 +163,6 @@ module Async
 				task.annotate "connecting to #{remote_address.inspect}"
 				
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
-					
 					if reuse_port
 						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
 					end
@@ -156,7 +170,7 @@ module Async
 					if local_address
 						socket.bind(local_address.to_sockaddr)
 					end
-
+					
 					self.new(socket, task.reactor)
 				end
 				
