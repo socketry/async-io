@@ -41,6 +41,20 @@ module Async
 				# This might be thrown by recv_nonblock.
 				return false
 			end
+			
+			# Best effort to set TCP_NODELAY. Swallows errors where possible.
+			def set_tcp_nodelay(value = 1)
+				self.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, value)
+			rescue Errno::EINVAL
+				# On Darwin, sometimes occurs when the connection is not yet fully formed. Empirically, TCP_NODELAY is enabled despite this result.
+			rescue Errno::EOPNOTSUPP
+				warn "Could not set TCP_NODELAY on #{self.inspect}, ignoring."
+				# Oh well, at least we tried?
+			end
+			
+			def tcp_nodelay
+				self.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY).bool
+			end
 		end
 		
 		class BasicSocket < Generic

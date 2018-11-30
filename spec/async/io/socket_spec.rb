@@ -71,6 +71,19 @@ RSpec.describe Async::IO::Socket do
 		end
 	end
 	
+	describe '#set_tcp_nodelay' do
+		it "should set TCP_NODELAY" do
+			address = Async::IO::Address.tcp('127.0.0.1', 0)
+			
+			socket = Async::IO::Socket.wrap(::Socket::AF_INET, ::Socket::SOCK_STREAM, 0)
+			
+			socket.set_tcp_nodelay
+			expect(socket.tcp_nodelay).to be true
+			
+			socket.close
+		end
+	end
+	
 	describe '.pair' do
 		subject{described_class.pair(:UNIX, :STREAM, 0)}
 		
