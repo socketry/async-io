@@ -23,8 +23,6 @@ require 'async/task'
 
 require_relative 'generic'
 
-require 'pry'
-
 module Async
 	module IO
 		module Peer
