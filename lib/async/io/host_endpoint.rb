@@ -30,7 +30,9 @@ module Async
 			end
 			
 			def to_s
-				"\#<#{self.class} #{@specification.inspect}>"
+				nodename, service, family, socktype, protocol, flags = @specification
+				
+				"\#<#{self.class} name=#{nodename.inspect} service=#{service.inspect} family=#{family.inspect} type=#{socktype.inspect} protocol=#{protocol.inspect} flags=#{flags.inspect}>"
 			end
 			
 			def hostname
