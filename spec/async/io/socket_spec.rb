@@ -84,6 +84,21 @@ RSpec.describe Async::IO::Socket do
 		end
 	end
 	
+	describe '#read_timeout' do
+		subject{described_class.pair(:UNIX, :STREAM, 0)}
+		
+		it "should timeout read operation" do
+			s1, s2 = *subject
+			
+			s2.recv_timeout = 1.0
+			
+			expect(s2.recv(32)).to be nil
+			
+			s1.close
+			s2.close
+		end
+	end
+	
 	describe '.pair' do
 		subject{described_class.pair(:UNIX, :STREAM, 0)}
 		

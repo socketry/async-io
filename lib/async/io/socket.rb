@@ -72,6 +72,37 @@ module Async
 			def protocol
 				self.local_address.protocol
 			end
+			
+			def recv_timeout= value
+				self.setsockopt Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, make_timeval(value)
+			end
+			
+			def recv_timeout
+				parse_timeval(self.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVTIMEO))
+			end
+			
+			def send_timeout= value
+				self.setsockopt Socket::SOL_SOCKET, Socket::SO_SNDTIMEO, make_timeval(value)
+			end
+			
+			def send_timeout
+				parse_timeval(self.getsockopt(Socket::SOL_SOCKET, Socket::SO_SNDTIMEO))
+			end
+			
+			private
+			
+			def make_timeval(duration)
+				seconds = Integer(duration)
+				microseconds = Integer((duration - seconds) * 1_000_000)
+				
+				return [seconds, microseconds].pack("l_2")
+			end
+			
+			def parse_timeval(struct)
+				seconds, microseconds = struct.unpack("l_2")
+				
+				return seconds + microseconds * 1_000_000
+			end
 		end
 		
 		class BasicSocket < Generic
