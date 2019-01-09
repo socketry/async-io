@@ -84,6 +84,21 @@ RSpec.describe Async::IO::Socket do
 		end
 	end
 	
+	describe '#timeout_duration' do
+		subject{described_class.pair(:UNIX, :STREAM, 0)}
+		
+		it "should set TCP_NODELAY" do
+			s1, s2 = *subject
+			
+			s2.timeout_duration = 1
+			
+			expect{s2.recv(32)}.to raise_error(Async::TimeoutError, "execution expired")
+			
+			s1.close
+			s2.close
+		end
+	end
+	
 	describe '.pair' do
 		subject{described_class.pair(:UNIX, :STREAM, 0)}
 		
