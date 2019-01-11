@@ -106,6 +106,8 @@ module Async
 				else
 					wait_any(:rw, timeout)
 				end
+			rescue TimeoutError
+				return nil
 			end
 			
 			def nonblock

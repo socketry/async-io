@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 require 'async/io'
+require 'async/clock'
 
 require_relative 'generic_examples'
 
@@ -31,25 +32,73 @@ RSpec.describe Async::IO::Generic do
 		:bytes, :chars, :codepoints, :each, :each_byte, :each_char, :each_codepoint, :each_line, :getbyte, :getc, :gets, :lineno, :lineno=, :lines, :print, :printf, :putc, :puts, :readbyte, :readchar, :readline, :readlines, :ungetbyte, :ungetc
 	] + CONSOLE_METHODS
 	
+	let(:message) {"Hello World!"}
+	
 	let(:pipe) {IO.pipe}
 	let(:input) {Async::IO::Generic.new(pipe.first)}
 	let(:output) {Async::IO::Generic.new(pipe.last)}
 	
 	it "should send and receive data within the same reactor" do
-		message = nil
+		received = nil
 		
 		output_task = reactor.async do
-			message = input.read(1024)
+			received = input.read(1024)
 		end
 		
 		reactor.async do
-			output.write("Hello World")
+			output.write(message)
 		end
 		
 		output_task.wait
-		expect(message).to be == "Hello World"
+		expect(received).to be == message
 		
 		input.close
 		output.close
+	end
+	
+	describe '#wait' do
+		let(:wait_duration) {0.1}
+		
+		it "can wait for :read and :write" do
+			reader = reactor.async do |task|
+				duration = Async::Clock.measure do
+					input.wait(1, :read)
+				end
+				
+				expect(duration).to be_within(10).percent_of(wait_duration)
+				expect(input.read(1024)).to be == message
+				
+				input.close
+			end
+			
+			writer = reactor.async do |task|
+				duration = Async::Clock.measure do
+					output.wait(1, :write)
+				end
+				
+				task.sleep(wait_duration)
+				
+				output.write(message)
+				output.close
+			end
+			
+			[reader, writer].each(&:wait)
+		end
+		
+		it "can return nil when timeout is exceeded" do
+			reader = reactor.async do |task|
+				duration = Async::Clock.measure do
+					expect(input.wait(wait_duration, :read)).to be_nil
+				end
+				
+				expect(duration).to be_within(10).percent_of(wait_duration)
+				
+				input.close
+			end
+			
+			[reader].each(&:wait)
+			
+			output.close
+		end
 	end
 end
