@@ -87,6 +87,29 @@ end
 
 Any `yield` operation can cause a timeout to trigger. Non-`async` functions might not timeout because they are outside the scope of `async`.
 
+### Reading Characters
+
+This example shows how to read one character at a time as the user presses it on the keyboard, and echos it back out as uppercase:
+
+```ruby
+require 'async'
+require 'async/io/stream'
+require 'io/console'
+
+$stdin.raw!
+$stdin.echo = false
+
+Async do |task|
+	stdin = Async::IO::Stream.new(
+		Async::IO::Generic.new($stdin)
+	)
+	
+	while character = stdin.read(1)
+		$stdout.write character.upcase
+	end
+end
+```
+
 ## Contributing
 
 1. Fork it
