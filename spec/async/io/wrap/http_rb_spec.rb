@@ -39,7 +39,7 @@ RSpec.describe Async::IO do
 			expect do
 				response = HTTP.get('https://www.google.com', wrappers)
 				response.connection.close
-			end.to_not raise_error
+			end.to_not raise_exception
 		end
 	end
 end

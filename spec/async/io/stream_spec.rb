@@ -161,7 +161,7 @@ RSpec.describe Async::IO::Stream do
 		it "should terminate stream" do
 			expect do
 				stream.eof!
-			end.to raise_error(EOFError)
+			end.to raise_exception(EOFError)
 			
 			expect(stream).to be_eof
 		end
@@ -178,7 +178,7 @@ RSpec.describe Async::IO::Stream do
 			
 			expect do
 				stream.close
-			end.to_not raise_error
+			end.to_not raise_exception
 		end
 	end
 end

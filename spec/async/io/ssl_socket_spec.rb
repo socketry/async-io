@@ -82,7 +82,7 @@ RSpec.describe Async::IO::SSLSocket do
 				reactor.async do
 					expect do
 						client_endpoint.connect
-					end.to raise_error(OpenSSL::SSL::SSLError)
+					end.to raise_exception(OpenSSL::SSL::SSLError)
 				end
 			end
 		end

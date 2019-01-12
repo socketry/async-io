@@ -115,7 +115,7 @@ RSpec.describe Async::IO::SSLServer do
 				expect do
 					invalid_client_endpoint.connect do |client|
 					end
-				end.to raise_error(OpenSSL::SSL::SSLError, /handshake failure/)
+				end.to raise_exception(OpenSSL::SSL::SSLError, /handshake failure/)
 				
 				server_task.stop
 			end

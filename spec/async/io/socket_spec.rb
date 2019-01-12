@@ -37,7 +37,7 @@ RSpec.describe Async::IO::Socket do
 		it "should fail to connect if no listening server" do
 			expect do
 				Async::IO::Socket.connect(address)
-			end.to raise_error(Errno::ECONNREFUSED)
+			end.to raise_exception(Errno::ECONNREFUSED)
 		end
 		
 		it "should close the socket when interrupted by a timeout" do
@@ -47,7 +47,7 @@ RSpec.describe Async::IO::Socket do
 			expect(wrapper).to receive(:close)
 			expect do
 				Async::IO::Socket.connect(address)
-			end.to raise_error(Async::TimeoutError)
+			end.to raise_exception(Async::TimeoutError)
 		end
 	end
 	
@@ -57,7 +57,7 @@ RSpec.describe Async::IO::Socket do
 			
 			expect do
 				Async::IO::Socket.bind(address)
-			end.to raise_error(Errno::EACCES)
+			end.to raise_exception(Errno::EACCES)
 		end
 		
 		it "can bind to port 0" do
@@ -92,7 +92,7 @@ RSpec.describe Async::IO::Socket do
 			
 			s2.timeout_duration = 1
 			
-			expect{s2.recv(32)}.to raise_error(Async::TimeoutError, "execution expired")
+			expect{s2.recv(32)}.to raise_exception(Async::TimeoutError, "execution expired")
 			
 			s1.close
 			s2.close

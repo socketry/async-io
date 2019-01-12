@@ -62,7 +62,7 @@ RSpec.describe Async::IO::TCPSocket do
 			
 			expect do
 				Net::HTTP.get_response('www.google.com', '/')
-			end.to_not raise_error
+			end.to_not raise_exception
 		end
 	end
 	
@@ -70,7 +70,7 @@ RSpec.describe Async::IO::TCPSocket do
 		it "should fetch page" do
 			expect do
 				Net::HTTP.get_response('www.google.com', '/')
-			end.to_not raise_error
+			end.to_not raise_exception
 		end
 	end
 end
