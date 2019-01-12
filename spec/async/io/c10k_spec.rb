@@ -27,7 +27,7 @@ RSpec.describe "echo client/server" do
 	# sudo sysctl -w net.inet.ip.portrange.hifirst=10000
 	# Probably due to the use of select.
 	
-	let(:repeats) {RUBY_PLATFORM =~ /darwin/ ? 100 : 10000}
+	let(:repeats) {RUBY_PLATFORM =~ /darwin/ ? 200 : 10000}
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10102)}
 	
 	def echo_server(server_address)
