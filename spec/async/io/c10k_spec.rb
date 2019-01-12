@@ -99,19 +99,7 @@ RSpec.describe "echo client/server" do
 			example.run
 		end
 		
-		example.reporter.message "Handled #{repeats} connections in #{duration}: #{repeats/duration}req/s"
-	end
-	
-	around(:each) do |example|
-		previous_level = Async.logger.level
-		# Supress logging:
-		Async.logger.level = Logger::WARN
-		
-		begin
-			example.run
-		ensure
-			Async.logger.level = previous_level
-		end
+		example.reporter.message "Handled #{repeats} connections in #{duration.round(2)}s: #{(repeats/duration).round(2)}req/s"
 	end
 	
 	it "should send/receive 10,000 messages" do
