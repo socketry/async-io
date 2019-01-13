@@ -38,7 +38,7 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	let!(:bound_endpoint) do
 		Async::Reactor.run do
 			Async::IO::SharedEndpoint.bound(server_endpoint)
-		end.result
+		end.wait
 	end
 	
 	it "can use bound endpoint in container" do
