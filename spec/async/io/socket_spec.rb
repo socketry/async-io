@@ -87,7 +87,7 @@ RSpec.describe Async::IO::Socket do
 	describe '#timeout_duration' do
 		subject{described_class.pair(:UNIX, :STREAM, 0)}
 		
-		it "should set TCP_NODELAY" do
+		it "should timeout while waiting to receive data" do
 			s1, s2 = *subject
 			
 			s2.timeout_duration = 1
