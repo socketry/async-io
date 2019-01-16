@@ -127,15 +127,15 @@ module Async
 			
 			protected
 			
-			def async_send(*args)
+			def async_send(*args, duration: self.timeout_duration)
 				while true
 					result = @io.__send__(*args, exception: false)
 					
 					case result
 					when :wait_readable
-						wait_readable(self.timeout_duration)
+						wait_readable(duration)
 					when :wait_writable
-						wait_writable(self.timeout_duration)
+						wait_writable(duration)
 					else
 						return result
 					end

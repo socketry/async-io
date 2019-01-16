@@ -87,6 +87,17 @@ end
 
 Any `yield` operation can cause a timeout to trigger. Non-`async` functions might not timeout because they are outside the scope of `async`.
 
+#### Wrapper Timeouts
+
+Asynchronous operations may block forever. You can assign a per-wrapper operation timeout duration. All asynchronous operations will be bounded by this timeout.
+
+```ruby
+peer.timeout_duration = 1
+peer.read(512) # If this takes more than 1 second, Async::TimeoutError will be raised.
+```
+
+The benefit of this approach is that it applies to all operations. Typically, this would be configured by the user, and set to something pretty high, e.g. 120 seconds.
+
 ### Reading Characters
 
 This example shows how to read one character at a time as the user presses it on the keyboard, and echos it back out as uppercase:

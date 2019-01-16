@@ -87,11 +87,13 @@ module Async
 		end
 		
 		module Server
-			def accept_each(task: Task.current)
+			def accept_each(duration: nil, task: Task.current)
 				task.annotate "accepting connections #{self.local_address.inspect}"
 				
 				while true
-					self.accept(task: task) do |io, address|
+					self.accept(duration: duration, task: task) do |io, address|
+						io.timeout_duration = self.timeout_duration
+						
 						yield io, address, task: task
 					end
 				end
@@ -115,8 +117,9 @@ module Async
 			
 			alias connect_nonblock connect
 			
-			def accept(task: Task.current)
-				peer, address = async_send(:accept_nonblock)
+			# @param duration [Numeric] the maximum time to wait for accepting a connection, if specified.
+			def accept(duration: nil, task: Task.current)
+				peer, address = async_send(:accept_nonblock, duration: duration)
 				wrapper = Socket.new(peer, task.reactor)
 				
 				return wrapper, address unless block_given?
@@ -135,12 +138,15 @@ module Async
 			alias accept_nonblock accept
 			alias sysaccept accept
 			
-			def self.build(*args, task: Task.current)
+			def self.build(*args, timeout_duration: nil, task: Task.current)
 				socket = wrapped_klass.new(*args)
 				
 				yield socket
 				
-				return self.new(socket, task.reactor)
+				wrapper = self.new(socket, task.reactor)
+				wrapper.timeout_duration = timeout_duration
+				
+				return wrapper
 			rescue Exception
 				socket.close if socket
 				
@@ -166,8 +172,6 @@ module Async
 					if local_address
 						socket.bind(local_address.to_sockaddr)
 					end
-					
-					self.new(socket, task.reactor)
 				end
 				
 				begin
@@ -197,7 +201,6 @@ module Async
 				Async.logger.debug(self) {"Binding to #{local_address.inspect}"}
 				
 				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
-					
 					if reuse_address
 						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
 					end

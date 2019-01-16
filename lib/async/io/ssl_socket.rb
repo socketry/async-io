@@ -102,7 +102,7 @@ module Async
 				self.class.new(@server.dup, @context)
 			end
 			
-			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=
+			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=, :timeout_duration, :timeout_duration=
 			
 			attr :server
 			attr :context
@@ -111,8 +111,8 @@ module Async
 				@server.listen(*args)
 			end
 			
-			def accept(task: Task.current)
-				peer, address = @server.accept
+			def accept(task: Task.current, **options)
+				peer, address = @server.accept(**options)
 				
 				wrapper = SSLSocket.new(peer, @context)
 				
@@ -126,8 +126,6 @@ module Async
 						wrapper.accept
 						
 						yield wrapper, address
-					rescue
-						Async.logger.error(self) {$!}
 					ensure
 						wrapper.close
 					end

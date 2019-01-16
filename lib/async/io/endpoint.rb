@@ -37,6 +37,10 @@ module Async
 				@options[:hostname]
 			end
 			
+			def timeout_duration
+				@options[:timeout_duration]
+			end
+			
 			def each
 				return to_enum unless block_given?
 				
