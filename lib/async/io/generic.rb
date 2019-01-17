@@ -97,7 +97,13 @@ module Async
 			alias syswrite write
 			alias << write
 			
-			def wait(timeout = nil, mode = :read)
+			def dup
+				super.tap do |copy|
+					copy.timeout_duration = self.timeout_duration
+				end
+			end
+			
+			def wait(timeout = self.timeout_duration, mode = :read)
 				case mode
 				when :read
 					wait_readable(timeout)
