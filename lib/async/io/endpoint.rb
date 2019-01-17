@@ -37,6 +37,10 @@ module Async
 				@options[:hostname]
 			end
 			
+			def reuse_port
+				@options[:reuse_port]
+			end
+			
 			def timeout_duration
 				@options[:timeout_duration]
 			end
