@@ -20,6 +20,8 @@
 
 require_relative 'notification'
 
+require 'thread'
+
 module Async
 	module IO
 		# A cross-reactor/process notification pipe.
@@ -27,12 +29,30 @@ module Async
 			def initialize(name)
 				@name = name
 				@notifications = []
+				
+				@installed = false
+				@mutex = Mutex.new
 			end
 			
+			# Ignore the trap within the current process. Can be invoked before forking and/or invoking `install!` to assert default behaviour.
+			def ignore!
+				Signal.trap(@name, "IGNORE")
+			end
+			
+			# Install the trap into the current process. Thread safe.
+			# @return [Boolean] whether the trap was installed or not. If the trap was already installed, returns nil.
 			def install!
-				Signal.trap(@name, &self.method(:trigger))
+				return if @installed
 				
-				return self
+				@mutex.synchronize do
+					return if @installed
+					
+					Signal.trap(@name, &self.method(:trigger))
+					
+					@installed = true
+				end
+				
+				return true
 			end
 			
 			# Block the calling task until the signal occurs.

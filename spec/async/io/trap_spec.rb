@@ -25,6 +25,12 @@ RSpec.describe Async::IO::Trap do
 	
 	subject {described_class.new(:USR1)}
 	
+	it "can ignore signal" do
+		subject.ignore!
+		
+		Process.kill(:USR1, Process.pid)
+	end
+	
 	it "should wait for signal" do
 		trapped = false
 		
