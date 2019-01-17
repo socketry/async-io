@@ -84,6 +84,9 @@ module Async
 					# This ensures that when the internal IO is closed, it also closes the internal socket:
 					io.sync_close = true
 					
+					# Copy the timeout duration:
+					@timeout_duration = socket.timeout_duration
+					
 					super(io, socket.reactor)
 				end
 			end

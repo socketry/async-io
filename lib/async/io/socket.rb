@@ -92,8 +92,6 @@ module Async
 				
 				while true
 					self.accept(duration: duration, task: task) do |io, address|
-						io.timeout_duration = self.timeout_duration
-						
 						yield io, address, task: task
 					end
 				end
@@ -121,6 +119,8 @@ module Async
 			def accept(duration: nil, task: Task.current)
 				peer, address = async_send(:accept_nonblock, duration: duration)
 				wrapper = Socket.new(peer, task.reactor)
+				
+				wrapper.timeout_duration = self.timeout_duration
 				
 				return wrapper, address unless block_given?
 				
