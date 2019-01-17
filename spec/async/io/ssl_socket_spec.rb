@@ -30,9 +30,9 @@ RSpec.describe Async::IO::SSLSocket do
 	it_should_behave_like Async::IO::Generic
 	
 	# Shared port for localhost network tests.
-	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true)}
-	let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context)}
-	let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context)}
+	let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true, timeout_duration: 10)}
+	let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context, timeout_duration: 20)}
+	let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context, timeout_duration: 20)}
 	
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
@@ -44,6 +44,8 @@ RSpec.describe Async::IO::SSLSocket do
 				
 				begin
 					server.accept do |peer, address|
+						expect(peer.timeout_duration).to be == 10
+						
 						data = peer.read(512)
 						peer.write(data)
 					end
@@ -64,6 +66,7 @@ RSpec.describe Async::IO::SSLSocket do
 				reactor.async do
 					client_endpoint.connect do |client|
 						expect(client).to be_connected
+						expect(client.timeout_duration).to be == 10
 						
 						client.write(data)
 						
