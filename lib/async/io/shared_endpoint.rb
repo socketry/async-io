@@ -49,7 +49,9 @@ module Async
 				self.new(endpoint, [peer])
 			end
 			
-			def initialize(endpoint, wrappers)
+			def initialize(endpoint, wrappers, **options)
+				super(**options)
+				
 				@endpoint = endpoint
 				@wrappers = wrappers
 			end

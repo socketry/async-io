@@ -21,32 +21,45 @@
 require 'async/io/host_endpoint'
 require 'async/io/shared_endpoint'
 
+require 'pry'
+
 RSpec.describe Async::IO::SharedEndpoint do
 	include_context Async::RSpec::Reactor
 	
 	describe '#bound' do
-		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123)}
+		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123, timeout_duration: 10)}
 		
 		it "can bind to shared endpoint" do
 			bound_endpoint = described_class.bound(endpoint)
-			
 			expect(bound_endpoint.wrappers).to_not be_empty
-			expect(bound_endpoint.wrappers.first).to be_a Async::IO::Socket
+			
+			wrapper = bound_endpoint.wrappers.first
+			expect(wrapper).to be_a Async::IO::Socket
+			expect(wrapper.timeout_duration).to be == endpoint.timeout_duration
 			
 			bound_endpoint.close
 		end
 	end
 	
 	describe '#connected' do
-		let(:endpoint) {Async::IO::Endpoint.tcp("www.google.com", 80)}
+		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5124, timeout_duration: 10)}
 		
 		it "can connect to shared endpoint" do
-			connected_endpoint = described_class.connected(endpoint)
+			server_task = reactor.async do
+				endpoint.accept do |io|
+					io.close
+				end
+			end
 			
+			connected_endpoint = described_class.connected(endpoint)
 			expect(connected_endpoint.wrappers).to_not be_empty
-			expect(connected_endpoint.wrappers.first).to be_a Async::IO::Socket
+			
+			wrapper = connected_endpoint.wrappers.first
+			expect(wrapper).to be_a Async::IO::Socket
+			expect(wrapper.timeout_duration).to be == endpoint.timeout_duration
 			
 			connected_endpoint.close
+			server_task.stop
 		end
 	end
 end
