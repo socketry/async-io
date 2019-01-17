@@ -113,7 +113,10 @@ module Async
 			def nonblock
 				true
 			end
-			alias nonblock= nonblock
+			
+			def nonblock= value
+				true
+			end
 			
 			def nonblock?
 				true
