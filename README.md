@@ -92,7 +92,7 @@ Any `yield` operation can cause a timeout to trigger. Non-`async` functions migh
 Asynchronous operations may block forever. You can assign a per-wrapper operation timeout duration. All asynchronous operations will be bounded by this timeout.
 
 ```ruby
-peer.timeout_duration = 1
+peer.timeout = 1
 peer.read(512) # If this takes more than 1 second, Async::TimeoutError will be raised.
 ```
 
