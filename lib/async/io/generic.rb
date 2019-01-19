@@ -99,11 +99,11 @@ module Async
 			
 			def dup
 				super.tap do |copy|
-					copy.timeout_duration = self.timeout_duration
+					copy.timeout = self.timeout
 				end
 			end
 			
-			def wait(timeout = self.timeout_duration, mode = :read)
+			def wait(timeout = self.timeout, mode = :read)
 				case mode
 				when :read
 					wait_readable(timeout)
@@ -132,19 +132,19 @@ module Async
 				!@io.closed?
 			end
 			
-			attr_accessor :timeout_duration
+			attr_accessor :timeout
 			
 			protected
 			
-			def async_send(*args, duration: self.timeout_duration)
+			def async_send(*args, timeout: self.timeout)
 				while true
 					result = @io.__send__(*args, exception: false)
 					
 					case result
 					when :wait_readable
-						wait_readable(duration)
+						wait_readable(timeout)
 					when :wait_writable
-						wait_writable(duration)
+						wait_writable(timeout)
 					else
 						return result
 					end

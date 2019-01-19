@@ -27,7 +27,7 @@ RSpec.describe Async::IO::SharedEndpoint do
 	include_context Async::RSpec::Reactor
 	
 	describe '#bound' do
-		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123, timeout_duration: 10)}
+		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123, timeout: 10)}
 		
 		it "can bind to shared endpoint" do
 			bound_endpoint = described_class.bound(endpoint)
@@ -35,14 +35,14 @@ RSpec.describe Async::IO::SharedEndpoint do
 			
 			wrapper = bound_endpoint.wrappers.first
 			expect(wrapper).to be_a Async::IO::Socket
-			expect(wrapper.timeout_duration).to be == endpoint.timeout_duration
+			expect(wrapper.timeout).to be == endpoint.timeout
 			
 			bound_endpoint.close
 		end
 	end
 	
 	describe '#connected' do
-		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5124, timeout_duration: 10)}
+		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5124, timeout: 10)}
 		
 		it "can connect to shared endpoint" do
 			server_task = reactor.async do
@@ -56,7 +56,7 @@ RSpec.describe Async::IO::SharedEndpoint do
 			
 			wrapper = connected_endpoint.wrappers.first
 			expect(wrapper).to be_a Async::IO::Socket
-			expect(wrapper.timeout_duration).to be == endpoint.timeout_duration
+			expect(wrapper.timeout).to be == endpoint.timeout
 			
 			connected_endpoint.close
 			server_task.stop

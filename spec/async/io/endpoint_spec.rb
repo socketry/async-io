@@ -30,11 +30,11 @@ RSpec.describe Async::IO::Endpoint do
 		end
 		
 		it "shouldn't have a timeout duration" do
-			expect(subject.timeout_duration).to be_nil
+			expect(subject.timeout).to be_nil
 		end
 	end
 	
-	describe Async::IO::Endpoint.tcp('0.0.0.0', 5234, reuse_port: true, timeout_duration: 10) do
+	describe Async::IO::Endpoint.tcp('0.0.0.0', 5234, reuse_port: true, timeout: 10) do
 		it "should be a tcp binding" do
 			subject.bind do |server|
 				expect(server.local_address.socktype).to be == ::Socket::SOCK_STREAM
@@ -42,7 +42,7 @@ RSpec.describe Async::IO::Endpoint do
 		end
 		
 		it "should have a timeout duration" do
-			expect(subject.timeout_duration).to be 10
+			expect(subject.timeout).to be 10
 		end
 		
 		it "should print nicely" do
@@ -62,14 +62,14 @@ RSpec.describe Async::IO::Endpoint do
 		it "can connect to bound server" do
 			server_task = reactor.async do
 				subject.accept do |io|
-					expect(io.timeout_duration).to be == 10
+					expect(io.timeout).to be == 10
 					io.write message
 					io.close
 				end
 			end
 			
 			io = subject.connect
-			expect(io.timeout_duration).to be == 10
+			expect(io.timeout).to be == 10
 			expect(io.read(message.bytesize)).to be == message
 			io.close
 			

@@ -41,8 +41,8 @@ module Async
 				@options[:reuse_port]
 			end
 			
-			def timeout_duration
-				@options[:timeout_duration]
+			def timeout
+				@options[:timeout]
 			end
 			
 			def each

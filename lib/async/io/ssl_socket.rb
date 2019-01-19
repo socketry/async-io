@@ -84,8 +84,8 @@ module Async
 					# This ensures that when the internal IO is closed, it also closes the internal socket:
 					io.sync_close = true
 					
-					# Copy the timeout duration:
-					@timeout_duration = socket.timeout_duration
+					# Copy the timeout:
+					@timeout = socket.timeout
 					
 					super(io, socket.reactor)
 				end
@@ -105,7 +105,7 @@ module Async
 				self.class.new(@server.dup, @context)
 			end
 			
-			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=, :timeout_duration, :timeout_duration=
+			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=, :timeout, :timeout=
 			
 			attr :server
 			attr :context

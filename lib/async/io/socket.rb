@@ -87,11 +87,11 @@ module Async
 		end
 		
 		module Server
-			def accept_each(duration: nil, task: Task.current)
+			def accept_each(timeout: nil, task: Task.current)
 				task.annotate "accepting connections #{self.local_address.inspect}"
 				
 				while true
-					self.accept(duration: duration, task: task) do |io, address|
+					self.accept(timeout: timeout, task: task) do |io, address|
 						yield io, address, task: task
 					end
 				end
@@ -116,11 +116,11 @@ module Async
 			alias connect_nonblock connect
 			
 			# @param duration [Numeric] the maximum time to wait for accepting a connection, if specified.
-			def accept(duration: nil, task: Task.current)
-				peer, address = async_send(:accept_nonblock, duration: duration)
+			def accept(timeout: nil, task: Task.current)
+				peer, address = async_send(:accept_nonblock, timeout: timeout)
 				wrapper = Socket.new(peer, task.reactor)
 				
-				wrapper.timeout_duration = self.timeout_duration
+				wrapper.timeout = self.timeout
 				
 				return wrapper, address unless block_given?
 				
@@ -138,13 +138,13 @@ module Async
 			alias accept_nonblock accept
 			alias sysaccept accept
 			
-			def self.build(*args, timeout_duration: nil, task: Task.current)
+			def self.build(*args, timeout: nil, task: Task.current)
 				socket = wrapped_klass.new(*args)
 				
 				yield socket
 				
 				wrapper = self.new(socket, task.reactor)
-				wrapper.timeout_duration = timeout_duration
+				wrapper.timeout = timeout
 				
 				return wrapper
 			rescue Exception

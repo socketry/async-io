@@ -84,13 +84,13 @@ RSpec.describe Async::IO::Socket do
 		end
 	end
 	
-	describe '#timeout_duration' do
+	describe '#timeout' do
 		subject{described_class.pair(:UNIX, :STREAM, 0)}
 		
 		it "should timeout while waiting to receive data" do
 			s1, s2 = *subject
 			
-			s2.timeout_duration = 1
+			s2.timeout = 1
 			
 			expect{s2.recv(32)}.to raise_exception(Async::TimeoutError, "execution expired")
 			
