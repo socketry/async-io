@@ -76,7 +76,7 @@ end
 Timeouts add a temporal limit to the execution of your code. If the IO doesn't respond in time, it will fail. Timeouts are high level concerns and you generally shouldn't use them except at the very highest level of your program.
 
 ```ruby
-message = task.timeout(5) do
+message = task.with_timeout(5) do
 	begin
 		peer.read(512)
 	rescue Async::TimeoutError
