@@ -110,10 +110,12 @@ module Async
 				end
 			end
 			
-			def accept(task: Task.current)
-				peer, address = async_send(:accept_nonblock)
+			def accept(timeout: nil, task: Task.current)
+				peer, address = async_send(:accept_nonblock, timeout: timeout)
 				
 				wrapper = TCPSocket.new(peer)
+				
+				wrapper.timeout = self.timeout
 				
 				return wrapper, address unless block_given?
 				
