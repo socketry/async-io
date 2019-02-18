@@ -36,7 +36,7 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context)}
 	
 	let!(:bound_endpoint) do
-		Async::Reactor.run do
+		Async do
 			Async::IO::SharedEndpoint.bound(server_endpoint)
 		end.wait
 	end
@@ -49,7 +49,7 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 			end
 		end
 		
-		Async::Reactor.run do
+		Async do
 			client_endpoint.connect do |peer|
 				expect(peer.read(11)).to eq "Hello World"
 			end

@@ -21,7 +21,7 @@ puts "Total number of connections: #{CONCURRENCY * TASKS * REPEATS}!"
 
 begin
 	container = Async::Container::Forked.new(concurrency: CONCURRENCY) do
-		Async::Reactor.run do |task|
+		Async do |task|
 			connections = []
 			
 			TASKS.times do

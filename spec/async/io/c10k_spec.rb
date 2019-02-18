@@ -31,7 +31,7 @@ RSpec.describe "echo client/server" do
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10102)}
 	
 	def echo_server(server_address)
-		Async::Reactor.run do |task|
+		Async do |task|
 			connection_count = 0
 			
 			connections_complete = task.async do
@@ -66,7 +66,7 @@ RSpec.describe "echo client/server" do
 	end
 	
 	def echo_client(server_address, data, responses)
-		Async::Reactor.run do |task|
+		Async do |task|
 			begin
 				Async::IO::Socket.connect(server_address) do |peer|
 					result = peer.write(data)
@@ -104,7 +104,7 @@ RSpec.describe "echo client/server" do
 	
 	it "should send/receive 10,000 messages" do
 		fork_server do
-			Async::Reactor.run do |task|
+			Async do |task|
 				responses = []
 				
 				tasks = repeats.times.collect do |i|

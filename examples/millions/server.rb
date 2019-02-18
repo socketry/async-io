@@ -14,7 +14,7 @@ class Server
 	end
 	
 	def run(endpoint)
-		Async::Reactor.run do |task|
+		Async do |task|
 			task.async do |subtask|
 				while true
 					subtask.sleep 10

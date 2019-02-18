@@ -4,7 +4,7 @@ $LOAD_PATH << File.expand_path("../../lib", __dir__)
 
 require 'set'
 
-require 'async/reactor'
+require 'async'
 require 'async/io/host_endpoint'
 require 'async/io/protocol/line'
 
@@ -61,7 +61,7 @@ class Server
 	end
 	
 	def run(endpoint)
-		Async::Reactor.run do |task|
+		Async do |task|
 			endpoint.accept do |peer|
 				stream = Async::IO::Stream.new(peer)
 				user = User.new(stream)

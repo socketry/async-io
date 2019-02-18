@@ -32,7 +32,7 @@ Basic echo server (from `spec/async/io/echo_spec.rb`):
 require 'async/io'
 
 def echo_server(endpoint)
-	Async::Reactor.run do |task|
+	Async do |task|
 		# This is a synchronous block within the current task:
 		endpoint.accept do |client|
 			# This is an asynchronous block within the current reactor:
@@ -47,7 +47,7 @@ def echo_server(endpoint)
 end
 
 def echo_client(endpoint, data)
-	Async::Reactor.run do |task|
+	Async do |task|
 		endpoint.connect do |peer|
 			result = peer.write(data)
 			
@@ -58,7 +58,7 @@ def echo_client(endpoint, data)
 	end
 end
 
-Async::Reactor.run do
+Async do
 	endpoint = Async::IO::Endpoint.tcp('0.0.0.0', 9000)
 	
 	server = echo_server(endpoint)

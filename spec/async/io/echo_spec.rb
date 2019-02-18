@@ -26,7 +26,7 @@ RSpec.describe "echo client/server" do
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 9002)}
 	
 	def echo_server(server_address)
-		Async::Reactor.run do |task|
+		Async do |task|
 			# This is a synchronous block within the current task:
 			Async::IO::Socket.accept(server_address) do |client|
 				# This is an asynchronous block within the current reactor:
@@ -41,7 +41,7 @@ RSpec.describe "echo client/server" do
 	end
 	
 	def echo_client(server_address, data, responses)
-		Async::Reactor.run do |task|
+		Async do |task|
 			Async::IO::Socket.connect(server_address) do |peer|
 				result = peer.write(data)
 				
