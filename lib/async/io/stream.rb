@@ -89,7 +89,9 @@ module Async
 				split_offset = pattern.bytesize - 1
 				
 				until index = @read_buffer.index(pattern, offset)
-					offset = [0, @read_buffer.size - split_offset].max
+					offset = @read_buffer.size - split_offset
+					
+					offset = 0 if offset < 0
 					
 					return unless fill_read_buffer
 				end
