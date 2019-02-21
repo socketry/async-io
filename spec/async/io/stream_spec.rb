@@ -82,6 +82,19 @@ RSpec.describe Async::IO::Stream do
 			expect(stream.read_until("\n")).to be_nil
 		end
 		
+		context "with 1-byte block size" do
+			let!(:stream) {Async::IO::Stream.new(buffer, block_size: 1)}
+			
+			it "can read a line with a multi-byte pattern" do
+				io.write("hello\r\nworld\r\n")
+				io.seek(0)
+				
+				expect(stream.read_until("\r\n")).to be == 'hello'
+				expect(stream.read_until("\r\n")).to be == 'world'
+				expect(stream.read_until("\r\n")).to be_nil
+			end
+		end
+		
 		context "with large content" do
 			it "allocates expected amount of bytes" do
 				expect do

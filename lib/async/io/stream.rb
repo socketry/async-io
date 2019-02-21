@@ -85,8 +85,11 @@ module Async
 			# @param pattern [String] The pattern to match.
 			# @return [String] The contents of the stream up until the pattern, which is consumed but not returned.
 			def read_until(pattern, offset = 0, chomp: true)
+				# We don't want to split on the pattern, so we subtract the size of the pattern.
+				split_offset = pattern.bytesize - 1
+				
 				until index = @read_buffer.index(pattern, offset)
-					offset = @read_buffer.size
+					offset = [0, @read_buffer.size - split_offset].max
 					
 					return unless fill_read_buffer
 				end
