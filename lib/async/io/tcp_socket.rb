@@ -92,8 +92,14 @@ module Async
 				super
 			end
 			
-			def read(size)
-				@buffer.read_partial(size)
+			def read(size, outbuf = nil)
+				buffer = @buffer.read_partial(size)
+				
+				if outbuf
+					outbuf.replace(buffer)
+				end
+				
+				return buffer
 			end
 		end
 		

@@ -33,10 +33,11 @@ RSpec.describe Async::IO::TCPSocket do
 	
 	describe Async::IO::TCPServer do
 		it_should_behave_like Async::IO::Generic
-		
-		it "should start server and send data" do
-			# Accept a single incoming connection and then finish.
-			server_task = reactor.async do |task|
+	end
+	
+	describe Async::IO::TCPServer do
+		let!(:server_task) do
+			reactor.async do |task|
 				server = Async::IO::TCPServer.new("localhost", 6788)
 				
 				peer, address = server.accept
@@ -47,9 +48,26 @@ RSpec.describe Async::IO::TCPSocket do
 				peer.close
 				server.close
 			end
+		end
+		
+		let(:client) {Async::IO::TCPSocket.new("localhost", 6788)}
+		
+		it "can read into outbuf" do
+			client.puts("Hello World")
 			
-			client = Async::IO::TCPSocket.new("localhost", 6788)
+			outbuf = String.new
+			# 20 is bigger than echo response...
+			data = client.read(20, outbuf)
 			
+			expect(outbuf).to_not be_empty
+			expect(outbuf).to be == data
+			
+			client.close
+			server_task.wait
+		end
+		
+		it "should start server and send data" do
+			# Accept a single incoming connection and then finish.
 			client.puts(data)
 			expect(client.gets).to be == data
 			
