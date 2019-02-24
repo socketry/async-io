@@ -49,6 +49,7 @@ module Async
 				Addrinfo.foreach(*@specification) do |address|
 					begin
 						return Socket.connect(address, **@options, &block)
+					# This is a little bit risky. In theory, what it is supposed to do is catch the failed connection, and try the next address. In practice, it can catch other kinds of failures. Ideally, it only applies to `#connect`, but it also applies to what's executed in `&block`.
 					rescue
 						last_error = $!
 					end
