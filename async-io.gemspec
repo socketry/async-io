@@ -19,7 +19,9 @@ Gem::Specification.new do |spec|
 	spec.add_development_dependency "async-rspec", "~> 1.10"
 
 	spec.required_ruby_version = '~> 2.3'
-
+	
+	spec.add_development_dependency "async-container", "~> 0.10.0"
+	
 	spec.add_development_dependency "bundler"
 	spec.add_development_dependency "covered"
 	spec.add_development_dependency "rake", "~> 10.0"

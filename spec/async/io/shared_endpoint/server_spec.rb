@@ -41,21 +41,26 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 		end.wait
 	end
 	
+	let(:container) {container_class.new}
+	
 	it "can use bound endpoint in container" do
-		container = container_class.new(concurrency: 1) do
+		container.run(count: 1) do
 			bound_endpoint.accept do |peer|
 				peer.write "Hello World"
 				peer.close
 			end
 		end
 		
-		Async do
-			client_endpoint.connect do |peer|
-				expect(peer.read(11)).to eq "Hello World"
+		container.wait do
+			Async do
+				client_endpoint.connect do |peer|
+					expect(peer.read(11)).to eq "Hello World"
+				end
 			end
+			
+			container.stop(false)
 		end
 		
-		container.stop
 		bound_endpoint.close
 	end
 end

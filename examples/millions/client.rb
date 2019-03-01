@@ -20,7 +20,9 @@ puts "Starting #{CONCURRENCY} processes, running #{TASKS} tasks, making #{REPEAT
 puts "Total number of connections: #{CONCURRENCY * TASKS * REPEATS}!"
 
 begin
-	container = Async::Container::Forked.new(concurrency: CONCURRENCY) do
+	container = Async::Container::Forked.new
+	
+	container.run(count: CONCURRENCY) do
 		Async do |task|
 			connections = []
 			

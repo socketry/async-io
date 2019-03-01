@@ -12,7 +12,5 @@ group :test do
 	gem 'benchmark-ips'
 	gem 'ruby-prof', platforms: :mri
 	
-	gem 'async-container'
-
 	gem 'http'
 end
