@@ -22,9 +22,6 @@ require_relative 'address_endpoint'
 
 module Async
 	module IO
-		class LockError < RuntimeError
-		end
-		
 		# This class doesn't exert ownership over the specified unix socket and ensures exclusive access by using `flock` where possible.
 		class UNIXEndpoint < AddressEndpoint
 			def initialize(path, type, **options)
@@ -39,30 +36,23 @@ module Async
 			
 			attr :path
 			
-			def lock_path
-				"#{@path}.lock"
-			end
-			
-			def with_lock(path = self.lock_path)
-				file = File.open(path, File::RDONLY | File::CREAT, 0600)
-				
-				if file.flock(File::LOCK_EX | File::LOCK_NB)
-					begin
-						yield
-					ensure
-						file.close
-						File.unlink(path)
-					end
-				else
-					raise LockError, "Could not acquire file lock: #{path}"
+			def bound?
+				self.connect do
+					return true
 				end
+			rescue Errno::ECONNREFUSED
+				return false
 			end
 			
 			def bind(&block)
-				with_lock do
-					File.unlink(@path) if File.exist?(@path)
-					
-					super(&block)
+				Socket.bind(@address, **@options, &block)
+			rescue Errno::EADDRINUSE
+				# If you encounter EADDRINUSE from `bind()`, you can check if the socket is actually accepting connections by attempting to `connect()` to it. If the socket is still bound by an active process, the connection will succeed. Otherwise, it should be safe to `unlink()` the path and try again.
+				if !bound? && File.exist?(@path)
+					File.unlink(@path)
+					retry
+				else
+					raise
 				end
 			end
 		end

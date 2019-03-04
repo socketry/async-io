@@ -63,11 +63,12 @@ RSpec.describe Async::IO::UNIXEndpoint do
 			
 			expect do
 				subject.bind
-			end.to raise_error(Async::IO::LockError)
+			end.to raise_error(Errno::EADDRINUSE)
 		end
 		
 		server_task = reactor.async do
 			subject.bind do |server|
+				server.listen(1)
 				condition.signal
 			end
 		end

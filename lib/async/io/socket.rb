@@ -141,6 +141,7 @@ module Async
 			alias accept_nonblock accept
 			alias sysaccept accept
 			
+			# Build and wrap the underlying io.
 			def self.build(*args, timeout: nil, task: Task.current)
 				socket = wrapped_klass.new(*args)
 				
