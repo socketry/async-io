@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2017, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,36 +18,60 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'endpoint'
+require 'async/io/unix_endpoint'
 
-module Async
-	module IO
-		# This class will open and close the socket automatically.
-		class AddressEndpoint < Endpoint
-			def initialize(address, **options)
-				super(**options)
-				
-				@address = address
-			end
-			
-			def to_s
-				"\#<#{self.class} #{@address.inspect}>"
-			end
-			
-			attr :address
-			
-			# Bind a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
-			# @yield [Socket] the bound socket
-			# @return [Socket] the bound socket
-			def bind(&block)
-				Socket.bind(@address, **@options, &block)
-			end
-			
-			# Connects a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
-			# @return [Socket] the connected socket
-			def connect(&block)
-				Socket.connect(@address, **@options, &block)
+RSpec.describe Async::IO::UNIXEndpoint do
+	include_context Async::RSpec::Reactor
+	
+	let(:data) {"The quick brown fox jumped over the lazy dog."} 
+	let(:path) {File.join(__dir__, "unix-socket")}
+	subject {described_class.unix(path)}
+	
+	before(:each) do
+		FileUtils.rm_f path
+	end
+	
+	after do
+		FileUtils.rm_f path
+	end
+	
+	it "should echo data back to peer" do
+		server_task = reactor.async do
+			subject.accept do |peer|
+				peer.send(peer.recv(512))
 			end
 		end
+		
+		reactor.async do
+			subject.connect do |client|
+				client.send(data)
+				
+				response = client.recv(512)
+				
+				expect(response).to be == data
+			end
+		end.wait
+		
+		server_task.stop
+	end
+	
+	it "should fails to bind if there is an existing binding" do
+		condition = Async::Condition.new
+		
+		reactor.async do
+			condition.wait
+			
+			expect do
+				subject.bind
+			end.to raise_error(Async::IO::LockError)
+		end
+		
+		server_task = reactor.async do
+			subject.bind do |server|
+				condition.signal
+			end
+		end
+		
+		server_task.stop
 	end
 end

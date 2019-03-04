@@ -1,4 +1,4 @@
-# Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
+# Copyright, 2019, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,35 +18,58 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require_relative 'endpoint'
+require_relative 'address_endpoint'
 
 module Async
 	module IO
-		# This class will open and close the socket automatically.
-		class AddressEndpoint < Endpoint
-			def initialize(address, **options)
-				super(**options)
+		class LockError < RuntimeError
+		end
+		
+		# This class doesn't exert ownership over the specified unix socket and ensures exclusive access by using `flock` where possible.
+		class UNIXEndpoint < AddressEndpoint
+			def initialize(path, type, **options)
+				super(Address.unix(path, type), **options)
 				
-				@address = address
+				@path = path
 			end
 			
 			def to_s
-				"\#<#{self.class} #{@address.inspect}>"
+				"\#<#{self.class} #{@path.inspect}>"
 			end
 			
-			attr :address
+			attr :path
 			
-			# Bind a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
-			# @yield [Socket] the bound socket
-			# @return [Socket] the bound socket
+			def lock_path
+				"#{@path}.lock"
+			end
+			
+			def with_lock(path = self.lock_path)
+				file = File.open(path, File::RDONLY | File::CREAT, 0600)
+				
+				if file.flock(File::LOCK_EX | File::LOCK_NB)
+					begin
+						yield
+					ensure
+						file.close
+						File.unlink(path)
+					end
+				else
+					raise LockError, "Could not acquire file lock: #{path}"
+				end
+			end
+			
 			def bind(&block)
-				Socket.bind(@address, **@options, &block)
+				with_lock do
+					File.unlink(@path) if File.exist?(@path)
+					
+					super(&block)
+				end
 			end
-			
-			# Connects a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
-			# @return [Socket] the connected socket
-			def connect(&block)
-				Socket.connect(@address, **@options, &block)
+		end
+		
+		class Endpoint
+			def self.unix(path, type = ::Socket::SOCK_STREAM, **options)
+				UNIXEndpoint.new(path, type, **options)
 			end
 		end
 	end
