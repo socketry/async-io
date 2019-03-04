@@ -25,6 +25,7 @@ module Async
 		# This class doesn't exert ownership over the specified unix socket and ensures exclusive access by using `flock` where possible.
 		class UNIXEndpoint < AddressEndpoint
 			def initialize(path, type, **options)
+				# I wonder if we should implement chdir behaviour in here if path is longer than 104 characters.
 				super(Address.unix(path, type), **options)
 				
 				@path = path
