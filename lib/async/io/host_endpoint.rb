@@ -78,13 +78,20 @@ module Async
 		end
 		
 		class Endpoint
-			# args: nodename, service, family, socktype, protocol, flags
+			# @param args nodename, service, family, socktype, protocol, flags. `socktype` will be set to Socket::SOCK_STREAM.
+			# @param options keyword arguments passed on to {HostEndpoint#initialize}
+			#
+			# @return [HostEndpoint]
 			def self.tcp(*args, **options)
 				args[3] = ::Socket::SOCK_STREAM
 				
 				HostEndpoint.new(args, **options)
 			end
 
+			# @param args nodename, service, family, socktype, protocol, flags. `socktype` will be set to Socket::SOCK_DGRAM.
+			# @param options keyword arguments passed on to {HostEndpoint#initialize}
+			#
+			# @return [HostEndpoint]
 			def self.udp(*args, **options)
 				args[3] = ::Socket::SOCK_DGRAM
 				

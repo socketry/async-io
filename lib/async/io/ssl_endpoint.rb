@@ -29,10 +29,10 @@ module Async
 				
 				@endpoint = endpoint
 				
-				if ssl_context = options[:ssl_context]
-					@context = build_context(ssl_context)
+				@context = if ssl_context = options[:ssl_context]
+					build_context(ssl_context)
 				else
-					@context = nil
+					nil
 				end
 			end
 			
@@ -89,8 +89,8 @@ module Async
 			def each
 				return to_enum unless block_given?
 				
-				@endpoint.each do |endpoint|
-					yield self.class.new(endpoint, @options)
+				@endpoint.each do |ep|
+					yield self.class.new(ep, @options)
 				end
 			end
 		end
@@ -99,6 +99,12 @@ module Async
 		SecureEndpoint = SSLEndpoint
 		
 		class Endpoint
+			# @param args
+			# @param ssl_context [OpenSSL::SSL::SSLContext, nil]
+			# @param hostname [String, nil]
+			# @param options keyword arguments passed through to {Endpoint.tcp}
+			#
+			# @return [SSLEndpoint]
 			def self.ssl(*args, ssl_context: nil, hostname: nil, **options)
 				SSLEndpoint.new(self.tcp(*args, **options), ssl_context: ssl_context, hostname: hostname)
 			end
