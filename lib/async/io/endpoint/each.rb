@@ -41,7 +41,7 @@ module Async
 				end
 			end
 			
-			# Generate a list of endpoint from an array.
+			# Generate a list of endpoints from an array.
 			def self.each(specifications, &block)
 				return to_enum(:each, specifications) unless block_given?
 				

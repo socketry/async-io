@@ -33,15 +33,17 @@ module Async
 			
 			attr :options
 			
-			@return [String]
+			# @return [String]
 			def hostname
 				@options[:hostname]
 			end
 			
+			# @return [Boolean]
 			def reuse_port
 				@options[:reuse_port]
 			end
 			
+			# @return [Integer]
 			def timeout
 				@options[:timeout]
 			end
@@ -60,7 +62,7 @@ module Async
 				end
 			end
 			
-			# Create an Endpoint instance by URI scheme
+			# Create an Endpoint instance by URI scheme.
 			#
 			# The host and port of the URI will be passed to the Endpoint
 			# factory method, along with any options.
