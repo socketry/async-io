@@ -29,10 +29,10 @@ module Async
 				
 				@endpoint = endpoint
 				
-				@context = if ssl_context = options[:ssl_context]
-					build_context(ssl_context)
+				if ssl_context = options[:ssl_context]
+					@context = build_context(ssl_context)
 				else
-					nil
+					@context = nil
 				end
 			end
 			
