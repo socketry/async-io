@@ -89,8 +89,8 @@ module Async
 			def each
 				return to_enum unless block_given?
 				
-				@endpoint.each do |ep|
-					yield self.class.new(ep, @options)
+				@endpoint.each do |singular_endpoint|
+					yield self.class.new(singular_endpoint, @options)
 				end
 			end
 		end
