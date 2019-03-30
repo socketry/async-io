@@ -26,8 +26,8 @@ module Async
 			def self.bound(endpoint, backlog = Socket::SOMAXCONN)
 				wrappers = []
 				
-				endpoint.each do |endpoint|
-					server = endpoint.bind
+				endpoint.each do |singular_endpoint|
+					server = singular_endpoint.bind
 					
 					server.listen(backlog)
 					

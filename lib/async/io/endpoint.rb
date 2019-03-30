@@ -33,14 +33,17 @@ module Async
 			
 			attr :options
 			
+			# @return [String]
 			def hostname
 				@options[:hostname]
 			end
 			
+			# @return [Boolean]
 			def reuse_port
 				@options[:reuse_port]
 			end
 			
+			# @return [Integer]
 			def timeout
 				@options[:timeout]
 			end
@@ -59,10 +62,23 @@ module Async
 				end
 			end
 			
+			# Create an Endpoint instance by URI scheme.
+			#
+			# The host and port of the URI will be passed to the Endpoint
+			# factory method, along with any options.
+			#
+			# @param string [String] URI as string. Scheme will decide implementation used.
+			# @param options keyword arguments passed through to {#initialize}
+			#
+			# @see Endpoint.socket socket - invoked when parsing a URL with the socket scheme "socket://127.0.0.1"
+			# @see Endpoint.ssl ssl - invoked when parsing a URL with the ssl scheme "ssl://127.0.0.1"
+			# @see Endpoint.tcp tcp - invoked when parsing a URL with the tcp scheme: "tcp://127.0.0.1"
+			# @see Endpoint.udp udp - invoked when parsing a URL with the udp scheme: "udp://127.0.0.1"
+			# @see Endpoint.unix unix - invoked when parsing a URL with the unix scheme: "unix://127.0.0.1"
 			def self.parse(string, **options)
 				uri = URI.parse(string)
 				
-				self.send(uri.scheme, uri.host, uri.port, **options)
+				self.public_send(uri.scheme, uri.host, uri.port, **options)
 			end
 		end
 	end
