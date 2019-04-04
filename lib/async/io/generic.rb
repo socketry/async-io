@@ -23,6 +23,10 @@ require 'forwardable'
 
 module Async
 	module IO
+		# The default block size for IO buffers.
+		# BLOCK_SIZE = ENV.fetch('BLOCK_SIZE', 1024*16).to_i
+		BLOCK_SIZE = 1024*8
+		
 		# Convert a Ruby ::IO object to a wrapped instance:
 		def self.try_convert(io, &block)
 			if wrapper_class = Generic::WRAPPERS[io.class]
@@ -42,17 +46,20 @@ module Async
 				# @!macro [attach] wrap_blocking_method
 				#   @method $1
 				#   Invokes `$2` on the underlying {io}. If the operation would block, the current task is paused until the operation can succeed, at which point it's resumed and the operation is completed.
-				def wrap_blocking_method(new_name, method_name, invert: true)
-					define_method(new_name) do |*args|
-						async_send(method_name, *args)
+				def wrap_blocking_method(new_name, method_name, invert: true, &block)
+					if block_given?
+						define_method(new_name, &block)
+					else
+						define_method(new_name) do |*args|
+							async_send(method_name, *args)
+						end
 					end
 					
 					if invert
-						# We define the original _nonblock method to call the async variant. We ignore options.
-						# define_method(method_name) do |*args, **options|
-						# 	self.__send__(new_name, *args)
-						# end
-						def_delegators :@io, method_name
+						# We wrap the original _nonblock method, ignoring options.
+						define_method(method_name) do |*args, **options|
+							async_send(method_name, *args)
+						end
 					end
 				end
 				
@@ -85,17 +92,72 @@ module Async
 			
 			wraps ::IO, :external_encoding, :internal_encoding, :autoclose?, :autoclose=, :pid, :stat, :binmode, :flush, :set_encoding, :to_io, :to_i, :reopen, :fileno, :fsync, :fdatasync, :sync, :sync=, :tell, :seek, :rewind, :pos, :pos=, :eof, :eof?, :close_on_exec?, :close_on_exec=, :closed?, :close_read, :close_write, :isatty, :tty?, :binmode?, :sysseek, :advise, :ioctl, :fcntl, :nread, :ready?, :pread, :pwrite, :pathconf
 			
+			# Read the specified number of bytes from the input stream. This is fast path.
 			# @example
-			#   data = io.read(512)
-			wrap_blocking_method :read, :read_nonblock
-			alias sysread read
-			alias readpartial read
+			#   data = io.sysread(512)
+			wrap_blocking_method :sysread, :read_nonblock
 			
+			def read(length = nil, buffer = nil)
+				if buffer
+					buffer.clear
+				else
+					buffer = String.new
+				end
+				
+				if length
+					return "" if length <= 0
+					
+					# Fast path:
+					buffer = self.sysread(length, buffer)
+					
+					while buffer.bytesize < length
+						# Slow path:
+						if chunk = self.sysread(length - buffer.bytesize)
+							buffer << chunk
+						else
+							break
+						end
+					end
+					
+					return buffer.empty? ? nil : buffer
+				else
+					buffer = self.sysread(BLOCK_SIZE, buffer)
+					
+					while chunk = self.sysread(BLOCK_SIZE)
+						buffer << chunk
+					end
+					
+					return buffer
+				end
+			end
+			
+			# Write entire buffer to output stream. This is fast path.
 			# @example
-			#   io.write("Hello World")
-			wrap_blocking_method :write, :write_nonblock
-			alias syswrite write
-			alias << write
+			#   io.syswrite("Hello World")
+			wrap_blocking_method :syswrite, :write_nonblock
+			
+			alias readpartial read_nonblock
+			
+			def write(buffer)
+				# Fast path:
+				written = self.syswrite(buffer)
+				remaining = buffer.bytesize - written
+				
+				while remaining > 0
+					# Slow path:
+					length = self.syswrite(buffer.byteslice(written, remaining))
+					
+					remaining -= length
+					written += length
+				end
+				
+				return written
+			end
+			
+			def << buffer
+				write(buffer)
+				return self
+			end
 			
 			def dup
 				super.tap do |copy|

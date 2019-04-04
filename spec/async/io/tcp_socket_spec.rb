@@ -22,7 +22,7 @@ require 'async/io/tcp_socket'
 
 require_relative 'generic_examples'
 
-RSpec.describe Async::IO::TCPSocket do
+RSpec.describe Async::IO::TCPSocket, timeout: 1 do
 	include_context Async::RSpec::Reactor
 	
 	it_should_behave_like Async::IO::Generic
@@ -44,6 +44,7 @@ RSpec.describe Async::IO::TCPSocket do
 				
 				data = peer.gets
 				peer.puts(data)
+				peer.flush
 				
 				peer.close
 				server.close
@@ -52,15 +53,16 @@ RSpec.describe Async::IO::TCPSocket do
 		
 		let(:client) {Async::IO::TCPSocket.new("localhost", 6788)}
 		
-		it "can read into outbuf" do
+		it "can read into output buffer" do
 			client.puts("Hello World")
+			client.flush
 			
-			outbuf = String.new
+			buffer = String.new
 			# 20 is bigger than echo response...
-			data = client.read(20, outbuf)
+			data = client.read(20, buffer)
 			
-			expect(outbuf).to_not be_empty
-			expect(outbuf).to be == data
+			expect(buffer).to_not be_empty
+			expect(buffer).to be == data
 			
 			client.close
 			server_task.wait
@@ -69,6 +71,8 @@ RSpec.describe Async::IO::TCPSocket do
 		it "should start server and send data" do
 			# Accept a single incoming connection and then finish.
 			client.puts(data)
+			client.flush
+			
 			expect(client.gets).to be == data
 			
 			client.close

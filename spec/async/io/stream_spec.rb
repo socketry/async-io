@@ -52,12 +52,19 @@ RSpec.describe Async::IO::Stream do
 		end
 	end
 	
+	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
+	describe "::BLOCK_SIZE" do
+		it "should exist and be reasonable" do
+			expect(Async::IO::Stream::BLOCK_SIZE).to be_between(1024, 1024*32)
+		end
+	end
+	
 	describe '#read' do
 		it "should read everything" do
 			io.write "Hello World"
 			io.seek(0)
 			
-			expect(io).to receive(:read).and_call_original.twice
+			expect(io).to receive(:read_nonblock).and_call_original.twice
 			
 			expect(stream.read).to be == "Hello World"
 			expect(stream).to be_eof
@@ -67,7 +74,7 @@ RSpec.describe Async::IO::Stream do
 			io.write "Hello World"
 			io.seek(0)
 			
-			expect(io).to receive(:read).and_call_original.twice
+			expect(io).to receive(:read_nonblock).and_call_original.twice
 			
 			expect(stream.read(4)).to be == "Hell"
 			expect(stream).to_not be_eof
@@ -150,7 +157,7 @@ RSpec.describe Async::IO::Stream do
 		end
 		
 		it "should avoid calling read" do
-			expect(io).to receive(:read).and_call_original.once
+			expect(io).to receive(:read_nonblock).and_call_original.once
 			
 			expect(stream.read_partial(12)).to be == "Hello World!"
 		end

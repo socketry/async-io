@@ -28,33 +28,7 @@ module Async
 		class TCPSocket < IPSocket
 			wraps ::TCPSocket
 			
-			class StreamWrapper
-				def initialize(io)
-					@io = io
-				end
-				
-				def sync= value
-					@io.sync = value
-				end
-				
-				def close
-					@io.close
-				end
-				
-				def read(*args)
-					@io.sysread(*args)
-				end
-				
-				def write(*args)
-					@io.syswrite(*args)
-				end
-				
-				def flush
-					@io.flush
-				end
-			end
-			
-			def initialize(remote_host, remote_port = nil, local_host = nil, local_port = 0)
+			def initialize(remote_host, remote_port = nil, local_host = nil, local_port = nil)
 				if remote_host.is_a? ::TCPSocket
 					super(remote_host)
 				else
@@ -73,33 +47,33 @@ module Async
 					# super(::TCPSocket.new(remote_host, remote_port, local_host, local_port))
 				end
 				
-				@buffer = Stream.new(StreamWrapper.new(self))
+				@stream = Stream.new(self)
 			end
 			
 			class << self
 				alias open new
 			end
 			
-			include Peer
-			
-			attr :buffer
-			
-			def_delegators :@buffer, :gets, :puts, :flush
-			
-			def write(*)
-				@buffer.flush
-				
+			def close
+				@stream.flush
 				super
 			end
 			
-			def read(size, outbuf = nil)
-				buffer = @buffer.read_partial(size)
+			include Peer
+			
+			attr :stream
+			
+			# The way this buffering works is pretty atrocious.
+			def_delegators :@stream, :gets, :puts
+			
+			def sysread(size, buffer = nil)
+				data = @stream.read_partial(size)
 				
-				if outbuf
-					outbuf.replace(buffer)
+				if buffer
+					buffer.replace(data)
 				end
 				
-				return buffer
+				return data
 			end
 		end
 		

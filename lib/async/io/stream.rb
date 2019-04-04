@@ -24,9 +24,7 @@ require_relative 'generic'
 module Async
 	module IO
 		class Stream
-			# The default block size for IO buffers.
-			# BLOCK_SIZE = ENV.fetch('BLOCK_SIZE', 1024*16).to_i
-			BLOCK_SIZE = 1024*8
+			BLOCK_SIZE = IO::BLOCK_SIZE
 			
 			def initialize(io, block_size: BLOCK_SIZE, sync: true)
 				@io = io
@@ -115,12 +113,12 @@ module Async
 			# @return the number of bytes appended to the buffer.
 			def write(string)
 				if @write_buffer.empty? and string.bytesize >= @block_size
-					syswrite(string)
+					@io.write(string)
 				else
 					@write_buffer << string
 					
 					if @write_buffer.size >= @block_size
-						syswrite(@write_buffer)
+						@io.write(@write_buffer)
 						@write_buffer.clear
 					end
 				end
@@ -138,7 +136,7 @@ module Async
 			# Flushes buffered data to the stream.
 			def flush
 				unless @write_buffer.empty?
-					syswrite(@write_buffer)
+					@io.write(@write_buffer)
 					@write_buffer.clear
 				end
 			end
@@ -207,9 +205,9 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer(size = @block_size)
-				if @read_buffer.empty? and @io.read(size, @read_buffer)
+				if @read_buffer.empty? and @io.read_nonblock(size, @read_buffer, exception: false)
 					return true
-				elsif chunk = @io.read(size, @input_buffer)
+				elsif chunk = @io.read_nonblock(size, @input_buffer, exception: false)
 					@read_buffer << chunk
 					return true
 				else
@@ -244,28 +242,6 @@ module Async
 				end
 				
 				return result
-			end
-			
-			# Write a buffer to the underlying stream.
-			# @param buffer [String] The string to write, any encoding is okay.
-			def syswrite(buffer)
-				remaining = buffer.bytesize
-				
-				# Fast path:
-				written = @io.write(buffer)
-				return if written == remaining
-				
-				# Slow path:
-				remaining -= written
-				
-				while remaining > 0
-					wrote = @io.write(buffer.byteslice(written, remaining))
-					
-					remaining -= wrote
-					written += wrote
-				end
-				
-				return written
 			end
 		end
 	end

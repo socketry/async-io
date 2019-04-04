@@ -46,7 +46,7 @@ RSpec.describe Async::IO::SSLSocket do
 					server.accept do |peer, address|
 						expect(peer.timeout).to be == 10
 						
-						data = peer.read
+						data = peer.read(512)
 						peer.write(data)
 					end
 				rescue OpenSSL::SSL::SSLError
@@ -71,7 +71,7 @@ RSpec.describe Async::IO::SSLSocket do
 						client.write(data)
 						client.close_write
 						
-						expect(client.read).to be == data
+						expect(client.read(512)).to be == data
 					end
 				end
 			end
