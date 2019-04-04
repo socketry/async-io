@@ -43,17 +43,16 @@ RSpec.describe Async::IO::Generic do
 		
 		output_task = reactor.async do
 			received = input.read(1024)
+			input.close
 		end
 		
 		reactor.async do
 			output.write(message)
+			output.close
 		end
 		
 		output_task.wait
 		expect(received).to be == message
-		
-		input.close
-		output.close
 	end
 	
 	describe '#wait' do

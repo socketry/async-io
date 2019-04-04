@@ -44,8 +44,9 @@ RSpec.describe "echo client/server" do
 		Async do |task|
 			Async::IO::Socket.connect(server_address) do |peer|
 				result = peer.write(data)
+				peer.close_write
 				
-				message = peer.read(512)
+				message = peer.read(data.bytesize)
 				
 				responses << message
 			end

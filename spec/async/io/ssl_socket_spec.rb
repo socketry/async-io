@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/io/ssl_socket'
+require 'async/io/ssl_endpoint'
 
 require 'async/rspec/ssl'
 require_relative 'generic_examples'
@@ -46,7 +46,7 @@ RSpec.describe Async::IO::SSLSocket do
 					server.accept do |peer, address|
 						expect(peer.timeout).to be == 10
 						
-						data = peer.read(512)
+						data = peer.read
 						peer.write(data)
 					end
 				rescue OpenSSL::SSL::SSLError
@@ -69,8 +69,9 @@ RSpec.describe Async::IO::SSLSocket do
 						expect(client.timeout).to be == 10
 						
 						client.write(data)
+						client.close_write
 						
-						expect(client.read(512)).to be == data
+						expect(client.read).to be == data
 					end
 				end
 			end

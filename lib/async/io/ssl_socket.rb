@@ -33,9 +33,6 @@ module Async
 			wrap_blocking_method :accept, :accept_nonblock
 			wrap_blocking_method :connect, :connect_nonblock
 			
-			alias syswrite write
-			alias sysread read
-			
 			def self.connect(socket, context, hostname = nil, &block)
 				client = self.new(socket, context)
 				
@@ -62,14 +59,6 @@ module Async
 				end
 			end
 			
-			def local_address
-				@io.to_io.local_address
-			end
-			
-			def remote_address
-				@io.to_io.remote_address
-			end
-			
 			include Peer
 			
 			def initialize(socket, context)
@@ -89,6 +78,27 @@ module Async
 					
 					super(io, socket.reactor)
 				end
+			end
+			
+			def local_address
+				@io.to_io.local_address
+			end
+			
+			def remote_address
+				@io.to_io.remote_address
+			end
+			
+			def close_write
+				self.shutdown(Socket::SHUT_WR)
+			end
+			
+			def close_read
+				self.shutdown(Socket::SHUT_RD)
+			end
+			
+			def shutdown(how)
+				@io.flush
+				@io.to_io.shutdown(how)
 			end
 		end
 		

@@ -52,6 +52,7 @@ RSpec.describe Async::IO::SSLServer do
 			reactor.async do
 				client_endpoint.connect do |client|
 					client.write(data)
+					client.close_write
 					
 					expect(client.read(512)).to be == data
 				end
@@ -91,6 +92,7 @@ RSpec.describe Async::IO::SSLServer do
 			reactor.async do
 				valid_client_endpoint.connect do |client|
 					client.write(data)
+					client.close_write
 					
 					expect(client.read(512)).to be == data
 				end

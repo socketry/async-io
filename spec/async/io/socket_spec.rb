@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 require 'async/io/socket'
+require 'async/io/address'
 
 require_relative 'generic_examples'
 
