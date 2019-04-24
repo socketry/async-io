@@ -31,7 +31,15 @@ module Async
 				@options = options.freeze
 			end
 			
-			attr :options
+			def with(**options)
+				dup = self.dup
+				
+				dup.options = @options.merge(options)
+				
+				return dup
+			end
+			
+			attr_accessor :options
 			
 			# @return [String] The hostname of the bound socket.
 			def hostname
@@ -59,6 +67,11 @@ module Async
 			# @return [Numeric] The default timeout for socket operations.
 			def timeout
 				@options[:timeout]
+			end
+			
+			# @return [Address] the address to bind to before connecting.
+			def local_address
+				@options[:local_address]
 			end
 			
 			# Endpoints sometimes have multiple paths.

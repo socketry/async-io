@@ -46,7 +46,7 @@ module Async
 			# Connects a socket to the given address. If a block is given, the socket will be automatically closed when the block exits.
 			# @return [Socket] the connected socket
 			def connect(&block)
-				Socket.connect(@address, **@options, &block)
+				Socket.connect(@address, self.local_address, **@options, &block)
 			end
 		end
 	end

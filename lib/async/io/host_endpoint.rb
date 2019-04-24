@@ -44,14 +44,14 @@ module Async
 			# @option local_address [Address] the local address to bind to, before connecting.
 			# @return [Socket] the connected socket
 			# @raise if no connection could complete successfully
-			def connect(local_address = nil)
+			def connect
 				last_error = nil
 				
 				task = Task.current
 				
 				Addrinfo.foreach(*@specification) do |address|
 					begin
-						wrapper = Socket.connect(address, local_address, **options, task: task)
+						wrapper = Socket.connect(address, self.local_address, **options, task: task)
 					rescue Errno::ECONNREFUSED, Errno::ENETUNREACH
 						last_error = $!
 					else
