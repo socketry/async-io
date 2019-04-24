@@ -57,6 +57,11 @@ RSpec.describe Async::IO::Endpoint do
 			expect(subject.hostname).to be == '0.0.0.0'
 		end
 		
+		it "has local address" do
+			address = Async::IO::Address.tcp('127.0.0.1', 8080)
+			expect(subject.with(local_address: address).local_address).to be == address
+		end
+		
 		let(:message) {"Hello World!"}
 		
 		it "can connect to bound server" do
