@@ -97,6 +97,7 @@ module Async
 			#   data = io.sysread(512)
 			wrap_blocking_method :sysread, :read_nonblock
 			
+			# Read `length` bytes of data from the underlying I/O. If length is unspecified, read everything.
 			def read(length = nil, buffer = nil)
 				if buffer
 					buffer.clear
