@@ -41,17 +41,27 @@ module Async
 			
 			# Try to connect to the given host by connecting to each address in sequence until a connection is made.
 			# @yield [Socket] the socket which is being connected, may be invoked more than once
+			# @option local_address [Address] the local address to bind to, before connecting.
 			# @return [Socket] the connected socket
 			# @raise if no connection could complete successfully
-			def connect(&block)
+			def connect(local_address = nil)
 				last_error = nil
+				
+				task = Task.current
 				
 				Addrinfo.foreach(*@specification) do |address|
 					begin
-						return Socket.connect(address, **@options, &block)
-					# This is a little bit risky. In theory, what it is supposed to do is catch the failed connection, and try the next address. In practice, it can catch other kinds of failures. Ideally, it only applies to `#connect`, but it also applies to what's executed in `&block`.
-					rescue
+						wrapper = Socket.connect(address, local_address, **options, task: task)
+					rescue Errno::ECONNREFUSED, Errno::ENETUNREACH
 						last_error = $!
+					else
+						return wrapper unless block_given?
+						
+						begin
+							return yield wrapper, task
+						ensure
+							wrapper.close
+						end
 					end
 				end
 				
