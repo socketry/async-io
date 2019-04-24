@@ -160,9 +160,9 @@ module Async
 			# Establish a connection to a given `remote_address`.
 			# @example
 			#  socket = Async::IO::Socket.connect(Async::IO::Address.tcp("8.8.8.8", 53))
-			# @param remote_address [Addrinfo] The remote address to connect to.
-			# @param local_address [Addrinfo] The local address to bind to before connecting.
-			# @option protcol [Integer] The socket protocol to use.
+			# @param remote_address [Address] The remote address to connect to.
+			# @param local_address [Address] The local address to bind to before connecting.
+			# @option reuse_port [Boolean] Whether to reuse the address or not.
 			def self.connect(remote_address, local_address = nil, reuse_port: nil, task: Task.current, **options)
 				Async.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
 				
