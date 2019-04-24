@@ -28,7 +28,7 @@ module Async
 		# Endpoints represent a way of connecting or binding to an address.
 		class Endpoint
 			def initialize(**options)
-				@options = options
+				@options = options.freeze
 			end
 			
 			attr :options
