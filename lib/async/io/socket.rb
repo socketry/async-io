@@ -108,6 +108,7 @@ module Async
 			
 			include ::Socket::Constants
 			
+			# @raise Errno::EAGAIN the connection failed due to the remote end being overloaded.
 			def connect(*args)
 				begin
 					async_send(:connect_nonblock, *args)
@@ -142,8 +143,22 @@ module Async
 			alias sysaccept accept
 			
 			# Build and wrap the underlying io.
-			def self.build(*args, timeout: nil, task: Task.current)
+			# @option reuse_port [Boolean] Allow this port to be bound in multiple processes.
+			# @option reuse_address [Boolean] Allow this port to be bound in multiple processes.
+			def self.build(*args, timeout: nil, reuse_address: true, reuse_port: nil, linger: nil, task: Task.current)
 				socket = wrapped_klass.new(*args)
+				
+				if reuse_address
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
+				end
+				
+				if reuse_port
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, 1)
+				end
+				
+				if linger
+					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_LINGER, linger)
+				end
 				
 				yield socket
 				
@@ -161,18 +176,13 @@ module Async
 			# @example
 			#  socket = Async::IO::Socket.connect(Async::IO::Address.tcp("8.8.8.8", 53))
 			# @param remote_address [Address] The remote address to connect to.
-			# @param local_address [Address] The local address to bind to before connecting.
-			# @option reuse_port [Boolean] Whether to reuse the address or not.
-			def self.connect(remote_address, local_address = nil, reuse_port: nil, task: Task.current, **options)
+			# @option local_address [Address] The local address to bind to before connecting.
+			def self.connect(remote_address, local_address: nil, task: Task.current, **options)
 				Async.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
 				
 				task.annotate "connecting to #{remote_address.inspect}"
 				
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
-					if reuse_port
-						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
-					end
-					
 					if local_address
 						socket.bind(local_address.to_sockaddr)
 					end
@@ -200,19 +210,10 @@ module Async
 			#  socket = Async::IO::Socket.bind(Async::IO::Address.tcp("0.0.0.0", 9090))
 			# @param local_address [Address] The local address to bind to.
 			# @option protocol [Integer] The socket protocol to use.
-			# @option reuse_port [Boolean] Allow this port to be bound in multiple processes.
-			def self.bind(local_address, protocol: 0, reuse_port: nil, reuse_address: true, task: Task.current, **options, &block)
+			def self.bind(local_address, protocol: 0, task: Task.current, **options, &block)
 				Async.logger.debug(self) {"Binding to #{local_address.inspect}"}
 				
 				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
-					if reuse_address
-						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
-					end
-					
-					if reuse_port
-						socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, 1)
-					end
-					
 					socket.bind(local_address.to_sockaddr)
 				end
 				

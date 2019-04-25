@@ -54,7 +54,7 @@ module Async
 				end
 			end
 			
-			def initialize(remote_host, remote_port = nil, local_host = nil, local_port = nil)
+			def initialize(remote_host, remote_port = nil, local_host = nil, local_port = 0)
 				if remote_host.is_a? ::TCPSocket
 					super(remote_host)
 				else
@@ -62,7 +62,7 @@ module Async
 					local_address = Addrinfo.tcp(local_host, local_port) if local_host
 					
 					# We do this unusual dance to avoid leaking an "open" socket instance.
-					socket = Socket.connect(remote_address, local_address)
+					socket = Socket.connect(remote_address, local_address: local_address)
 					fd = socket.fcntl(Fcntl::F_DUPFD)
 					Async.logger.debug(self) {"Connected to #{remote_address.inspect}: #{fd}"}
 					socket.close

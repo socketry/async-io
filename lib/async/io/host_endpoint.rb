@@ -41,7 +41,6 @@ module Async
 			
 			# Try to connect to the given host by connecting to each address in sequence until a connection is made.
 			# @yield [Socket] the socket which is being connected, may be invoked more than once
-			# @option local_address [Address] the local address to bind to, before connecting.
 			# @return [Socket] the connected socket
 			# @raise if no connection could complete successfully
 			def connect
@@ -51,8 +50,8 @@ module Async
 				
 				Addrinfo.foreach(*@specification) do |address|
 					begin
-						wrapper = Socket.connect(address, self.local_address, **options, task: task)
-					rescue Errno::ECONNREFUSED, Errno::ENETUNREACH
+						wrapper = Socket.connect(address, **@options, task: task)
+					rescue Errno::ECONNREFUSED, Errno::ENETUNREACH, Errno::EAGAIN
 						last_error = $!
 					else
 						return wrapper unless block_given?
