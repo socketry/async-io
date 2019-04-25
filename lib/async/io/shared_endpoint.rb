@@ -23,30 +23,25 @@ require_relative 'endpoint'
 module Async
 	module IO
 		class SharedEndpoint < Endpoint
+			# Create a new `SharedEndpoint` by binding to the given endpoint.
 			def self.bound(endpoint, backlog = Socket::SOMAXCONN)
-				wrappers = []
-				
-				endpoint.each do |singular_endpoint|
-					server = singular_endpoint.bind
-					
+				wrappers = endpoint.bound do |server|
 					server.listen(backlog)
-					
 					server.close_on_exec = false
 					server.reactor = nil
-					
-					wrappers << server
 				end
 				
-				self.new(endpoint, wrappers)
+				return self.new(endpoint, wrappers)
 			end
 			
+			# Create a new `SharedEndpoint` by connecting to the given endpoint.
 			def self.connected(endpoint)
-				peer = endpoint.connect
+				wrapper = endpoint.connect
 				
-				peer.close_on_exec = false
-				peer.reactor = nil
+				wrapper.close_on_exec = false
+				wrapper.reactor = nil
 				
-				self.new(endpoint, [peer])
+				return self.new(endpoint, [wrapper])
 			end
 			
 			def initialize(endpoint, wrappers, **options)
@@ -59,8 +54,10 @@ module Async
 			attr :endpoint
 			attr :wrappers
 			
+			# Close all the internal wrappers.
 			def close
 				@wrappers.each(&:close)
+				@wrappers.clear
 			end
 			
 			def bind
