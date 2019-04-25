@@ -22,6 +22,7 @@ require_relative 'endpoint'
 
 module Async
 	module IO
+		# Pre-connect and pre-bind sockets so that it can be used between processes.
 		class SharedEndpoint < Endpoint
 			# Create a new `SharedEndpoint` by binding to the given endpoint.
 			def self.bound(endpoint, backlog = Socket::SOMAXCONN)

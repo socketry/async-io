@@ -22,8 +22,26 @@ require_relative 'generic'
 
 module Async
 	module IO
-		STDIN = Generic.new($stdin)
-		STDOUT = Generic.new($stdout)
-		STDERR = Generic.new($stderr)
+		class StandardInput < Generic
+			def initialize(io = $stdin)
+				super(io)
+			end
+		end
+		
+		class StandardOutput < Generic
+			def initialize(io = $stdout)
+				super(io)
+			end
+		end
+		
+		class StandardError < Generic
+			def initialize(io = $stderr)
+				super(io)
+			end
+		end
+		
+		STDIN = StandardInput.new
+		STDOUT = StandardOutput.new
+		STDERR = StandardError.new
 	end
 end

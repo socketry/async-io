@@ -31,7 +31,7 @@ end
 RSpec.describe Async::IO::STDOUT do
 	include_context Async::RSpec::Reactor
 	
-	it "should be able to read" do
+	it "should be able to write" do
 		expect(subject.write("")).to be == 0
 	end
 end
@@ -39,7 +39,7 @@ end
 RSpec.describe Async::IO::STDERR do
 	include_context Async::RSpec::Reactor
 	
-	it "should be able to read" do
+	it "should be able to write" do
 		expect(subject.write("")).to be == 0
 	end
 end
