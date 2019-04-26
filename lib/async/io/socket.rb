@@ -23,6 +23,12 @@ require 'async/task'
 
 require_relative 'generic'
 
+module ::Socket::Constants
+	if defined?(SOL_IP) and !defined?(IP_BIND_ADDRESS_NO_PORT)
+		IP_BIND_ADDRESS_NO_PORT = 24
+	end
+end
+
 module Async
 	module IO
 		module Peer
@@ -184,6 +190,10 @@ module Async
 				
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
 					if local_address
+						if defined?(IP_BIND_ADDRESS_NO_PORT)
+							socket.setsockopt(::Socket::SOL_IP, ::Socket::IP_BIND_ADDRESS_NO_PORT, 1)
+						end
+						
 						socket.bind(local_address.to_sockaddr)
 					end
 				end

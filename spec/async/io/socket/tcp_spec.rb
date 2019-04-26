@@ -24,7 +24,8 @@ RSpec.describe Async::IO::Socket do
 	include_context Async::RSpec::Reactor
 	
 	# Shared port for localhost network tests.
-	let(:server_address) {Async::IO::Address.tcp("localhost", 6788)}
+	let(:server_address) {Async::IO::Address.tcp("127.0.0.1", 6788)}
+	let(:local_address) {Async::IO::Address.tcp("127.0.0.1", 0)}
 	let(:data) {"The quick brown fox jumped over the lazy dog."}
 	
 	let!(:server_task) do
@@ -54,6 +55,16 @@ RSpec.describe Async::IO::Socket do
 	end
 	
 	describe 'non-blocking tcp connect' do
+		it "can specify local address" do
+			reactor.async do |task|
+				Async::IO::Socket.connect(server_address, local_address: local_address) do |client|
+					client.write(data)
+					
+					expect(client.read(512)).to be == data
+				end
+			end
+		end
+		
 		it "should start server and send data" do
 			reactor.async do |task|
 				Async::IO::Socket.connect(server_address) do |client|
