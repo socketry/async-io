@@ -32,13 +32,15 @@ end
 module Async
 	module IO
 		module Peer
+			include ::Socket::Constants
+			
 			# Is it likely that the socket is still connected?
 			# May return false positive, but won't return false negative.
 			def connected?
 				return false if @io.closed?
 				
 				# If we can wait for the socket to become readable, we know that the socket may still be open.
-				result = to_io.recv_nonblock(1, Socket::MSG_PEEK, exception: false)
+				result = to_io.recv_nonblock(1, MSG_PEEK, exception: false)
 				
 				# Either there was some data available, or we can wait to see if there is data avaialble.
 				return !result.empty? || result == :wait_readable
@@ -53,8 +55,8 @@ module Async
 				super
 				
 				case self.protocol
-				when 0, Socket::IPPROTO_TCP
-					self.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, value ? 1 : 0)
+				when 0, IPPROTO_TCP
+					self.setsockopt(IPPROTO_TCP, TCP_NODELAY, value ? 1 : 0)
 				else
 					Async.logger.warn(self) {"Unsure how to sync=#{value} for #{self.protocol}!"}
 				end
@@ -67,8 +69,8 @@ module Async
 			
 			def sync
 				case self.protocol
-				when Socket::IPPROTO_TCP
-					self.getsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY).bool
+				when IPPROTO_TCP
+					self.getsockopt(IPPROTO_TCP, TCP_NODELAY).bool
 				else
 					true
 				end && super
@@ -112,8 +114,6 @@ module Async
 			
 			wrap_blocking_method :recvfrom, :recvfrom_nonblock
 			
-			include ::Socket::Constants
-			
 			# @raise Errno::EAGAIN the connection failed due to the remote end being overloaded.
 			def connect(*args)
 				begin
@@ -155,15 +155,15 @@ module Async
 				socket = wrapped_klass.new(*args)
 				
 				if reuse_address
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEADDR, 1)
+					socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 				end
 				
 				if reuse_port
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_REUSEPORT, 1)
+					socket.setsockopt(SOL_SOCKET, SO_REUSEPORT, 1)
 				end
 				
 				if linger
-					socket.setsockopt(::Socket::SOL_SOCKET, ::Socket::SO_LINGER, linger)
+					socket.setsockopt(SOL_SOCKET, SO_LINGER, linger)
 				end
 				
 				yield socket
@@ -191,7 +191,7 @@ module Async
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
 					if local_address
 						if defined?(IP_BIND_ADDRESS_NO_PORT)
-							socket.setsockopt(::Socket::SOL_IP, ::Socket::IP_BIND_ADDRESS_NO_PORT, 1)
+							socket.setsockopt(SOL_IP, IP_BIND_ADDRESS_NO_PORT, 1)
 						end
 						
 						socket.bind(local_address.to_sockaddr)
