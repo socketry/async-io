@@ -23,12 +23,6 @@ require 'async/task'
 
 require_relative 'generic'
 
-module ::Socket::Constants
-	if defined?(SOL_IP) and !defined?(IP_BIND_ADDRESS_NO_PORT)
-		IP_BIND_ADDRESS_NO_PORT = 24
-	end
-end
-
 module Async
 	module IO
 		module Peer
@@ -191,6 +185,7 @@ module Async
 				wrapper = build(remote_address.afamily, remote_address.socktype, remote_address.protocol, **options) do |socket|
 					if local_address
 						if defined?(IP_BIND_ADDRESS_NO_PORT)
+							# Inform the kernel (Linux 4.2+) to not reserve an ephemeral port when using bind(2) with a port number of 0. The port will later be automatically chosen at connect(2) time, in a way that allows sharing a source port as long as the 4-tuple is unique.
 							socket.setsockopt(SOL_IP, IP_BIND_ADDRESS_NO_PORT, 1)
 						end
 						
