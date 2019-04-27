@@ -21,59 +21,44 @@
 require 'async/io'
 require 'benchmark'
 
+require 'ruby-prof'
+
 RSpec.describe "echo client/server" do
 	# macOS has a rediculously hard time to do this.
 	# sudo sysctl -w net.inet.ip.portrange.first=10000
 	# sudo sysctl -w net.inet.ip.portrange.hifirst=10000
 	# Probably due to the use of select.
 	
-	let(:repeats) {RUBY_PLATFORM =~ /darwin/ ? 200 : 10000}
+	let(:repeats) {RUBY_PLATFORM =~ /darwin/ ? 1000 : 10000}
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10101)}
 	
 	def echo_server(server_address)
 		Async do |task|
-			connection_count = 0
+			connections = []
 			
-			connections_complete = task.async do
-				last_count = 0
+			Async::IO::Socket.bind(server_address) do |server|
+				server.listen(Socket::SOMAXCONN)
 				
-				while connection_count < repeats
-					if connection_count != last_count
-						puts "#{connection_count}/#{repeats} simultaneous connections."
-						last_count = connection_count
-					end
-					
-					task.sleep(1.0)
+				while connections.count < repeats
+					peer, address = server.accept
+					connections << peer
 				end
-				
-				puts "Releasing all connections..."
-			end
+			end.wait
 			
-			# This is a synchronous block within the current task:
-			Async::IO::Socket.accept(server_address) do |client|
-				connection_count += 1
-				
-				# Wait until we've got all the connections:
-				connections_complete.wait
-				
-				# This is an asynchronous block within the current reactor:
-				data = client.read(512)
-				client.write(data)
+			puts "Releasing #{connections.count} connections..."
+			
+			while connection = connections.pop
+				connection.write(".")
+				connection.close
 			end
 		end
-	ensure
-		puts "echo_server: #{$!.inspect}"
 	end
 	
 	def echo_client(server_address, data, responses)
 		Async do |task|
 			begin
 				Async::IO::Socket.connect(server_address) do |peer|
-					result = peer.write(data)
-					
-					message = peer.read(512)
-					
-					responses << message
+					responses << peer.read(1)
 				end
 			rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EADDRINUSE
 				puts "#{data}: #{$!}..."
@@ -85,9 +70,16 @@ RSpec.describe "echo client/server" do
 	
 	def fork_server
 		pid = fork do
+			# profile = RubyProf::Profile.new(merge_fibers: true)
+			# profile.start
+			
 			echo_server(server_address)
+		# ensure
+		# 	result = profile.stop
+		# 	printer = RubyProf::FlatPrinter.new(result)
+		# 	printer.print(STDOUT)
 		end
-		
+
 		yield
 	ensure
 		Process.kill(:KILL, pid)
@@ -104,6 +96,9 @@ RSpec.describe "echo client/server" do
 	
 	it "should wait until all clients are connected" do
 		fork_server do
+			# profile = RubyProf::Profile.new(merge_fibers: true)
+			# profile.start
+			
 			Async do |task|
 				responses = []
 				
@@ -119,6 +114,11 @@ RSpec.describe "echo client/server" do
 				
 				expect(responses.count).to be repeats
 			end
+			
+		# ensure
+		# 	result = profile.stop
+		# 	printer = RubyProf::FlatPrinter.new(result)
+		# 	printer.print(STDOUT)
 		end
 	end
 end
