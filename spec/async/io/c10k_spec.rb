@@ -28,7 +28,7 @@ RSpec.describe "echo client/server" do
 	# Probably due to the use of select.
 	
 	let(:repeats) {RUBY_PLATFORM =~ /darwin/ ? 200 : 10000}
-	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10102)}
+	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10101)}
 	
 	def echo_server(server_address)
 		Async do |task|
@@ -102,7 +102,7 @@ RSpec.describe "echo client/server" do
 		example.reporter.message "Handled #{repeats} connections in #{duration.round(2)}s: #{(repeats/duration).round(2)}req/s"
 	end
 	
-	it "should send/receive 10,000 messages" do
+	it "should wait until all clients are connected" do
 		fork_server do
 			Async do |task|
 				responses = []
