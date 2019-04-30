@@ -163,7 +163,17 @@ module Async
 				@io.closed?
 			end
 			
-			# Closes the stream and flushes any unwritten data.
+			def close_read
+				@io.close_read
+			end
+			
+			def close_write
+				flush
+			ensure
+				@io.close_write
+			end
+			
+			# Best effort to flush any unwritten data, and then close the underling IO.
 			def close
 				return if @io.closed?
 				

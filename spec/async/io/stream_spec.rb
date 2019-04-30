@@ -29,6 +29,29 @@ RSpec.describe Async::IO::Stream do
 	let!(:stream) {Async::IO::Stream.new(buffer)}
 	let(:io) {stream.io}
 	
+	describe '#close_read' do
+		let(:sockets) {@sockets = Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)}
+		let!(:stream) {Async::IO::Stream.new(sockets.last)}
+		after(:each) {@sockets&.each(&:close)}
+		
+		it "can close the reading end of the stream" do
+			stream.close_read
+			
+			expect do
+				stream.read
+			end.to raise_error(IOError, /not opened for reading/)
+		end
+		
+		it "can close the writing end of the stream" do
+			stream.close_write
+			
+			expect do
+				stream.write("Oh no!")
+				stream.flush
+			end.to raise_error(IOError, /not opened for writing/)
+		end
+	end
+	
 	describe '#read' do
 		it "should read everything" do
 			io.write "Hello World"
