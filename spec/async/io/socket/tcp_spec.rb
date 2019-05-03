@@ -60,6 +60,7 @@ RSpec.describe Async::IO::Socket do
 			reactor.async do |task|
 				Async::IO::Socket.connect(server_address, local_address: local_address) do |client|
 					client.write(data)
+					client.close_write
 					
 					expect(client.read(512)).to be == data
 				end

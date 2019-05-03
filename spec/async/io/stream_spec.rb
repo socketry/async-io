@@ -76,10 +76,10 @@ RSpec.describe Async::IO::Stream do
 			
 			expect(io).to receive(:read_nonblock).and_call_original.twice
 			
-			expect(stream.read(4)).to be == "Hell"
+			expect(stream.read_partial(4)).to be == "Hell"
 			expect(stream).to_not be_eof
 			
-			expect(stream.read(20)).to be == "o World"
+			expect(stream.read_partial(20)).to be == "o World"
 			expect(stream).to be_eof
 		end
 		
@@ -171,7 +171,7 @@ RSpec.describe Async::IO::Stream do
 			
 			it "allocates exact number of bytes being read" do
 				expect do
-					stream.read(16*1024)
+					stream.read_partial(16*1024)
 				end.to limit_allocations.of(String, count: 1, size: 0)
 			end
 			
