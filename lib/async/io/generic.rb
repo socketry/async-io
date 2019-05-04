@@ -109,14 +109,16 @@ module Async
 					return "" if length <= 0
 					
 					# Fast path:
-					buffer = self.sysread(length, buffer)
-					
-					while buffer.bytesize < length
+					if buffer = self.sysread(length, buffer)
+						
 						# Slow path:
-						if chunk = self.sysread(length - buffer.bytesize)
-							buffer << chunk
-						else
-							break
+						while buffer.bytesize < length
+							# Slow path:
+							if chunk = self.sysread(length - buffer.bytesize)
+								buffer << chunk
+							else
+								break
+							end
 						end
 					end
 					
