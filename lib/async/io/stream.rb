@@ -68,10 +68,10 @@ module Async
 			
 			# Read at most `size` bytes from the stream. Will avoid reading from the underlying stream if possible.
 			def read_partial(size = nil)
-				return '' if size == 0 
+				return '' if size == 0
 				
 				unless @eof
-					if size and @read_buffer.bytesize <= size
+					if size and @read_buffer.bytesize < size
 						fill_read_buffer(size > @block_size ? size : @block_size)
 					elsif @read_buffer.empty?
 						fill_read_buffer
