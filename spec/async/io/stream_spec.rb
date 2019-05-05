@@ -21,6 +21,8 @@
 require 'async/io/stream'
 require 'async/rspec/buffer'
 
+require 'pry'
+
 RSpec.describe Async::IO::Stream do
 	include_context Async::RSpec::Buffer
 	include_context Async::RSpec::Memory
@@ -35,14 +37,17 @@ RSpec.describe Async::IO::Stream do
 		after(:each) {@sockets&.each(&:close)}
 		
 		it "can close the reading end of the stream" do
+			expect(stream.io).to receive(:close_read).and_call_original
+			
 			stream.close_read
 			
-			expect do
-				stream.read
-			end.to raise_error(IOError, /not opened for reading/)
+			expect(stream.read).to be_nil
 		end
 		
 		it "can close the writing end of the stream" do
+			expect(stream.io).to receive(:close_write).and_call_original
+			
+			stream.write("Oh no!")
 			stream.close_write
 			
 			expect do
