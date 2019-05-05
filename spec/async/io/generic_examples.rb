@@ -22,3 +22,31 @@ RSpec.shared_examples Async::IO::Generic do |ignore_methods|
 	# 	end
 	# end
 end
+
+RSpec.shared_examples Async::IO do
+	let(:data) {"Hello World!"}
+	
+	it "should read data" do
+		io.write(data)
+		expect(subject.read(data.bytesize)).to be == data
+	end
+	
+	it "should read less than available data" do
+		io.write(data)
+		expect(subject.read(1)).to be == data[0]
+	end
+	
+	it "should read all available data" do
+		io.write(data)
+		io.close_write
+		
+		expect(subject.read(data.bytesize * 2)).to be == data
+	end
+	
+	it "should read all available data" do
+		io.write(data)
+		io.close_write
+		
+		expect(subject.read).to be == data
+	end
+end

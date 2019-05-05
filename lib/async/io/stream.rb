@@ -45,20 +45,17 @@ module Async
 			attr :io
 			attr :block_size
 			
-			# Reads exactly `size` bytes from the stream. If size is not specified, read until end of file.
-			# @raise EOFError if the requested number of bytes could not be read.
+			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 			def read(size = nil)
 				return '' if size == 0
 				
 				if size
-					until @read_buffer.size >= size
+					until @eof or @read_buffer.size >= size
 						# Compute the amount of data we need to read from the underlying stream:
 						read_size = size - @read_buffer.bytesize
 						
 						# Don't read less than @block_size to avoid lots of small reads:
 						fill_read_buffer(read_size > @block_size ? read_size : @block_size)
-						
-						eof! if @eof
 					end
 				else
 					until @eof

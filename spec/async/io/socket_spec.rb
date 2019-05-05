@@ -125,6 +125,21 @@ RSpec.describe Async::IO::Socket do
 			s2.close
 		end
 	end
+	
+	context '.pipe' do
+		let(:sockets) do
+			@sockets = described_class.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
+		end
+		
+		after do
+			@sockets&.each(&:close)
+		end
+		
+		let(:io) {sockets.first}
+		subject {sockets.last}
+		
+		it_should_behave_like Async::IO
+	end
 end
 
 RSpec.describe Async::IO::IPSocket do

@@ -18,36 +18,50 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-require 'async/io/stream'
-require 'async/rspec/buffer'
+require 'async/io/socket'
+require_relative 'stream_context'
 
 RSpec.describe Async::IO::Stream do
-	include_context Async::RSpec::Buffer
-	include_context Async::RSpec::Memory
-	include_context Async::RSpec::Reactor
-	
-	let!(:stream) {Async::IO::Stream.new(buffer)}
-	let(:io) {stream.io}
+	describe '#read' do
+		let(:sockets) do
+			@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
+		end
+		
+		after do
+			@sockets&.each(&:close)
+		end
+		
+		let(:io) {sockets.first}
+		subject {described_class.new(sockets.last)}
+		
+		it_should_behave_like Async::IO
+	end
 	
 	describe '#close_read' do
-		let(:sockets) {@sockets = Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)}
-		let!(:stream) {Async::IO::Stream.new(sockets.last)}
-		after(:each) {@sockets&.each(&:close)}
+		let(:sockets) do
+			@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
+		end
 		
-		it "can close the reading end of the stream" do
-			stream.close_read
+		after do
+			@sockets&.each(&:close)
+		end
+		
+		subject {described_class.new(sockets.last)}
+		
+		it "can close the reading end of the subject" do
+			subject.close_read
 			
 			expect do
-				stream.read
+				subject.read
 			end.to raise_error(IOError, /not opened for reading/)
 		end
 		
-		it "can close the writing end of the stream" do
-			stream.close_write
+		it "can close the writing end of the subject" do
+			subject.close_write
 			
 			expect do
-				stream.write("Oh no!")
-				stream.flush
+				subject.write("Oh no!")
+				subject.flush
 			end.to raise_error(IOError, /not opened for writing/)
 		end
 	end
@@ -59,169 +73,174 @@ RSpec.describe Async::IO::Stream do
 		end
 	end
 	
-	describe '#read' do
-		it "should read everything" do
-			io.write "Hello World"
-			io.seek(0)
-			
-			expect(io).to receive(:read_nonblock).and_call_original.twice
-			
-			expect(stream.read).to be == "Hello World"
-			expect(stream).to be_eof
-		end
+	context "buffered I/O" do
+		include_context Async::IO::Stream
+		include_context Async::RSpec::Memory
+		include_context Async::RSpec::Reactor
 		
-		it "should read only the amount requested" do
-			io.write "Hello World"
-			io.seek(0)
-			
-			expect(io).to receive(:read_nonblock).and_call_original.twice
-			
-			expect(stream.read_partial(4)).to be == "Hell"
-			expect(stream).to_not be_eof
-			
-			expect(stream.read_partial(20)).to be == "o World"
-			expect(stream).to be_eof
-		end
-		
-		context "with large content" do
-			it "allocates expected amount of bytes" do
-				io.write("." * 16*1024)
+		describe '#read' do
+			it "should read everything" do
+				io.write "Hello World"
 				io.seek(0)
 				
-				buffer = nil
+				expect(subject.io).to receive(:read_nonblock).and_call_original.twice
 				
+				expect(subject.read).to be == "Hello World"
+				expect(subject).to be_eof
+			end
+		
+			it "should read only the amount requested" do
+				io.write "Hello World"
+				io.seek(0)
+				
+				expect(subject.io).to receive(:read_nonblock).and_call_original.twice
+				
+				expect(subject.read_partial(4)).to be == "Hell"
+				expect(subject).to_not be_eof
+				
+				expect(subject.read_partial(20)).to be == "o World"
+				expect(subject).to be_eof
+			end
+		
+			context "with large content" do
+				it "allocates expected amount of bytes" do
+					io.write("." * 16*1024)
+					io.seek(0)
+					
+					buffer = nil
+					
+					expect do
+						# The read buffer is already allocated, and it will be resized to fit the incoming data. It will be swapped with an empty buffer.
+						buffer = subject.read(16*1024)
+					end.to limit_allocations.of(String, count: 1, size: 0)
+					
+					expect(buffer.size).to be == 16*1024
+				end
+			end
+		end
+		
+		describe '#read_until' do
+			it "can read a line" do
+				io.write("hello\nworld\n")
+				io.seek(0)
+				
+				expect(subject.read_until("\n")).to be == 'hello'
+				expect(subject.read_until("\n")).to be == 'world'
+				expect(subject.read_until("\n")).to be_nil
+			end
+		
+			context "with 1-byte block size" do
+				subject! {Async::IO::Stream.new(buffer, block_size: 1)}
+				
+				it "can read a line with a multi-byte pattern" do
+					io.write("hello\r\nworld\r\n")
+					io.seek(0)
+					
+					expect(subject.read_until("\r\n")).to be == 'hello'
+					expect(subject.read_until("\r\n")).to be == 'world'
+					expect(subject.read_until("\r\n")).to be_nil
+				end
+			end
+			
+			context "with large content" do
+				it "allocates expected amount of bytes" do
+					subject
+					
+					expect do
+						subject.read_until("b")
+					end.to limit_allocations.of(String, size: 0, count: 1)
+				end
+			end
+		end
+		
+		describe '#flush' do
+			it "should not call write if write buffer is empty" do
+				expect(subject.io).to_not receive(:write)
+				
+				subject.flush
+			end
+		
+			it "should flush underlying data when it exceeds block size" do
+				expect(subject.io).to receive(:write).and_call_original.once
+				
+				subject.block_size.times do
+					subject.write("!")
+				end
+			end
+		end
+		
+		describe '#read_partial' do
+			before(:each) do
+				io.write("Hello World!" * 1024)
+				io.seek(0)
+			end
+			
+			it "should avoid calling read" do
+				expect(subject.io).to receive(:read_nonblock).and_call_original.once
+				
+				expect(subject.read_partial(12)).to be == "Hello World!"
+			end
+			
+			context "with large content" do
+				it "allocates only the amount required" do
+					expect do
+						subject.read(4*1024)
+					end.to limit_allocations.of(String, count: 2, size: 4*1024+1)
+				end
+				
+				it "allocates exact number of bytes being read" do
+					expect do
+						subject.read_partial(16*1024)
+					end.to limit_allocations.of(String, count: 1, size: 0)
+				end
+				
+				it "allocates expected amount of bytes" do
+					buffer = nil
+					
+					expect do
+						buffer = subject.read_partial
+					end.to limit_allocations.of(String, count: 1)
+					
+					expect(buffer.size).to be == subject.block_size
+				end
+			end
+		end
+		
+		describe '#write' do
+			it "should read one line" do
+				expect(subject.io).to receive(:write).and_call_original.once
+				
+				subject.write "Hello World\n"
+				subject.flush
+				
+				io.seek(0)
+				expect(subject.read).to be == "Hello World\n"
+			end
+		end
+		
+		describe '#eof' do
+			it "should terminate subject" do
 				expect do
-					# The read buffer is already allocated, and it will be resized to fit the incoming data. It will be swapped with an empty buffer.
-					buffer = stream.read(16*1024)
-				end.to limit_allocations.of(String, count: 1, size: 0)
+					subject.eof!
+				end.to raise_exception(EOFError)
 				
-				expect(buffer.size).to be == 16*1024
-				
+				expect(subject).to be_eof
+			end
+		end
+		
+		describe '#close' do
+			it 'can be closed even if underlying io is closed' do
 				io.close
-			end
-		end
-	end
-	
-	describe '#read_until' do
-		it "can read a line" do
-			io.write("hello\nworld\n")
-			io.seek(0)
-			
-			expect(stream.read_until("\n")).to be == 'hello'
-			expect(stream.read_until("\n")).to be == 'world'
-			expect(stream.read_until("\n")).to be_nil
-		end
-		
-		context "with 1-byte block size" do
-			let!(:stream) {Async::IO::Stream.new(buffer, block_size: 1)}
-			
-			it "can read a line with a multi-byte pattern" do
-				io.write("hello\r\nworld\r\n")
-				io.seek(0)
 				
-				expect(stream.read_until("\r\n")).to be == 'hello'
-				expect(stream.read_until("\r\n")).to be == 'world'
-				expect(stream.read_until("\r\n")).to be_nil
-			end
-		end
-		
-		context "with large content" do
-			it "allocates expected amount of bytes" do
-				expect do
-					stream.read_until("b")
-				end.to limit_allocations.of(String, size: 0, count: 1)
-			end
-		end
-	end
-	
-	describe '#flush' do
-		it "should not call write if write buffer is empty" do
-			expect(io).to_not receive(:write)
-			
-			stream.flush
-		end
-		
-		it "should flush underlying data when it exceeds block size" do
-			expect(io).to receive(:write).and_call_original.once
-			
-			stream.block_size.times do
-				stream.write("!")
-			end
-		end
-	end
-	
-	describe '#read_partial' do
-		before(:each) do
-			io.write "Hello World!" * 1024
-			io.seek(0)
-		end
-		
-		it "should avoid calling read" do
-			expect(io).to receive(:read_nonblock).and_call_original.once
-			
-			expect(stream.read_partial(12)).to be == "Hello World!"
-		end
-		
-		context "with large content" do
-			it "allocates only the amount required" do
-				expect do
-					stream.read(4*1024)
-				end.to limit_allocations.of(String, count: 2, size: 4*1024+1)
-			end
-			
-			it "allocates exact number of bytes being read" do
-				expect do
-					stream.read_partial(16*1024)
-				end.to limit_allocations.of(String, count: 1, size: 0)
-			end
-			
-			it "allocates expected amount of bytes" do
-				buffer = nil
+				expect(subject.io).to be_closed
+				
+				# Put some data in the write buffer
+				subject.write "."
 				
 				expect do
-					buffer = stream.read_partial
-				end.to limit_allocations.of(String, count: 1)
-				
-				expect(buffer.size).to be == stream.block_size
+					subject.close
+				end.to_not raise_exception
 			end
-		end
-	end
-	
-	describe '#write' do
-		it "should read one line" do
-			expect(io).to receive(:write).and_call_original.once
-			
-			stream.write "Hello World\n"
-			stream.flush
-			
-			io.seek(0)
-			
-			expect(stream.read).to be == "Hello World\n"
-		end
-	end
-	
-	describe '#eof' do
-		it "should terminate stream" do
-			expect do
-				stream.eof!
-			end.to raise_exception(EOFError)
-			
-			expect(stream).to be_eof
-		end
-	end
-	
-	describe '#close' do
-		it 'can be closed even if underlying io is closed' do
-			io.close
-			
-			expect(stream.io).to be_closed
-			
-			# Put some data in the write buffer
-			stream.write "."
-			
-			expect do
-				stream.close
-			end.to_not raise_exception
 		end
 	end
 end
