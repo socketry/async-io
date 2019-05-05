@@ -57,7 +57,7 @@ module Async
 					
 					if invert
 						# We wrap the original _nonblock method, ignoring options.
-						define_method(method_name) do |*args, **options|
+						define_method(method_name) do |*args, exception: false|
 							async_send(method_name, *args)
 						end
 					end
