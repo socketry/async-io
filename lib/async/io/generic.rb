@@ -120,9 +120,11 @@ module Async
 								break
 							end
 						end
+						
+						return buffer
+					else
+						return nil
 					end
-					
-					return buffer.empty? ? nil : buffer
 				else
 					buffer = self.sysread(BLOCK_SIZE, buffer)
 					
