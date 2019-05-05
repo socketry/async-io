@@ -58,7 +58,7 @@ module Async
 				# On Darwin, sometimes occurs when the connection is not yet fully formed. Empirically, TCP_NODELAY is enabled despite this result.
 			rescue Errno::EOPNOTSUPP
 				# Some platforms may simply not support the operation.
-				Async.logger.warn(self) {"Unable to set sync=#{value}!"}
+				# Async.logger.warn(self) {"Unable to set sync=#{value}!"}
 			end
 			
 			def sync

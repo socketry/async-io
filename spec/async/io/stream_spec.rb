@@ -19,12 +19,19 @@
 # THE SOFTWARE.
 
 require 'async/io/socket'
+
+require_relative 'generic_examples'
 require_relative 'stream_context'
 
-require 'pry'
-
 RSpec.describe Async::IO::Stream do
-	describe '#read' do
+	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
+	describe "::BLOCK_SIZE" do
+		it "should exist and be reasonable" do
+			expect(Async::IO::Stream::BLOCK_SIZE).to be_between(1024, 1024*32)
+		end
+	end
+	
+	context "socket I/O" do
 		let(:sockets) do
 			@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
 		end
@@ -37,43 +44,54 @@ RSpec.describe Async::IO::Stream do
 		subject {described_class.new(sockets.last)}
 		
 		it_should_behave_like Async::IO
-	end
-	
-	describe '#close_read' do
-		let(:sockets) do
-			@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
+		
+		describe '#close_read' do
+			let(:sockets) do
+				@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
+			end
+			
+			after do
+				@sockets&.each(&:close)
+			end
+			
+			subject {described_class.new(sockets.last)}
+			
+			it "can close the reading end of the stream" do
+				expect(subject.io).to receive(:close_read).and_call_original
+				
+				subject.close_read
+				
+				# Ruby <= 2.4 raises an exception even with exception: false
+				# expect(stream.read).to be_nil
+			end
+			
+			it "can close the writing end of the stream" do
+				expect(subject.io).to receive(:close_write).and_call_original
+				
+				subject.write("Oh yes!")
+				subject.close_write
+				
+				expect do
+					subject.write("Oh no!")
+					subject.flush
+				end.to raise_error(IOError, /not opened for writing/)
+			end
 		end
 		
-		after do
-			@sockets&.each(&:close)
-		end
-		
-		it "can close the reading end of the stream" do
-			expect(stream.io).to receive(:close_read).and_call_original
+		describe '#read_exactly' do
+			it "can read several bytes" do
+				io.write("hello\nworld\n")
+				
+				expect(subject.read_exactly(4)).to be == 'hell'
+			end
 			
-			stream.close_read
-			
-			# Ruby <= 2.4 raises an exception even with exception: false
-			# expect(stream.read).to be_nil
-		end
-		
-		it "can close the writing end of the stream" do
-			expect(stream.io).to receive(:close_write).and_call_original
-			
-			stream.write("Oh yes!")
-			stream.close_write
-			
-			expect do
-				subject.write("Oh no!")
-				subject.flush
-			end.to raise_error(IOError, /not opened for writing/)
-		end
-	end
-	
-	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
-	describe "::BLOCK_SIZE" do
-		it "should exist and be reasonable" do
-			expect(Async::IO::Stream::BLOCK_SIZE).to be_between(1024, 1024*32)
+			it "can raise exception if io is eof" do
+				io.close
+				
+				expect do
+					subject.read_exactly(4)
+				end.to raise_error(EOFError)
+			end
 		end
 	end
 	

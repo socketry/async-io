@@ -81,6 +81,18 @@ module Async
 				return consume_read_buffer(size)
 			end
 			
+			def read_exactly(size, exception: EOFError)
+				if buffer = read(size)
+					if buffer.bytesize != size
+						raise exception, "could not read enough data"
+					end
+					
+					return buffer
+				end
+				
+				raise exception, "encountered eof while reading data"
+			end
+			
 			alias readpartial read_partial
 			
 			# Efficiently read data from the stream until encountering pattern.
