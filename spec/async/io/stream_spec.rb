@@ -21,6 +21,8 @@
 require 'async/io/socket'
 require_relative 'stream_context'
 
+require 'pry'
+
 RSpec.describe Async::IO::Stream do
 	describe '#read' do
 		let(:sockets) do
@@ -46,18 +48,19 @@ RSpec.describe Async::IO::Stream do
 			@sockets&.each(&:close)
 		end
 		
-		subject {described_class.new(sockets.last)}
-		
-		it "can close the reading end of the subject" do
-			subject.close_read
+		it "can close the reading end of the stream" do
+			expect(stream.io).to receive(:close_read).and_call_original
 			
-			expect do
-				subject.read
-			end.to raise_error(IOError, /not opened for reading/)
+			stream.close_read
+			
+			expect(stream.read).to be_nil
 		end
 		
-		it "can close the writing end of the subject" do
-			subject.close_write
+		it "can close the writing end of the stream" do
+			expect(stream.io).to receive(:close_write).and_call_original
+			
+			stream.write("Oh no!")
+			stream.close_write
 			
 			expect do
 				subject.write("Oh no!")
