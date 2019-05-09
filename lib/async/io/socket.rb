@@ -95,10 +95,12 @@ module Async
 			def accept_each(timeout: nil, task: Task.current)
 				task.annotate "accepting connections #{self.local_address.inspect}"
 				
+				callback = lambda do |io, address|
+					yield io, address, task: task
+				end
+				
 				while true
-					self.accept(timeout: timeout, task: task) do |io, address|
-						yield io, address, task: task
-					end
+					self.accept(timeout: timeout, task: task, &callback)
 				end
 			end
 		end
