@@ -36,12 +36,13 @@ def echo_server(endpoint)
 		# This is a synchronous block within the current task:
 		endpoint.accept do |client|
 			# This is an asynchronous block within the current reactor:
-			data = client.read(512)
+			data = client.read
 			
 			# This produces out-of-order responses.
 			task.sleep(rand * 0.01)
 			
 			client.write(data.reverse)
+			client.close_write
 		end
 	end
 end
@@ -49,9 +50,10 @@ end
 def echo_client(endpoint, data)
 	Async do |task|
 		endpoint.connect do |peer|
-			result = peer.write(data)
+			peer.write(data)
+			peer.close_write
 			
-			message = peer.read(512)
+			message = peer.read
 			
 			puts "Sent #{data}, got response: #{message}"
 		end
@@ -78,7 +80,7 @@ Timeouts add a temporal limit to the execution of your code. If the IO doesn't r
 ```ruby
 message = task.with_timeout(5) do
 	begin
-		peer.read(512)
+		peer.read
 	rescue Async::TimeoutError
 		nil # The timeout was triggered.
 	end
@@ -93,7 +95,7 @@ Asynchronous operations may block forever. You can assign a per-wrapper operatio
 
 ```ruby
 peer.timeout = 1
-peer.read(512) # If this takes more than 1 second, Async::TimeoutError will be raised.
+peer.read # If this takes more than 1 second, Async::TimeoutError will be raised.
 ```
 
 The benefit of this approach is that it applies to all operations. Typically, this would be configured by the user, and set to something pretty high, e.g. 120 seconds.
