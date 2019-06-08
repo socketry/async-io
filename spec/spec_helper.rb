@@ -1,12 +1,5 @@
 
 require 'covered/rspec'
-
-if RUBY_ENGINE == "truffleruby"
-	warn "Workarounds for TruffleRuby enabled..."
-	require_relative 'truffle'
-end
-
-# Shared rspec helpers:
 require "async/rspec"
 
 require_relative 'addrinfo'
