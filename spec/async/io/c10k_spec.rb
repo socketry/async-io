@@ -21,7 +21,7 @@
 require 'async/io'
 require 'benchmark'
 
-require 'ruby-prof'
+# require 'ruby-prof'
 
 RSpec.describe "echo client/server" do
 	# macOS has a rediculously hard time to do this.
