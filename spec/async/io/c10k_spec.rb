@@ -20,6 +20,7 @@
 
 require 'async/io'
 require 'benchmark'
+require 'open3'
 
 # require 'ruby-prof'
 
@@ -29,7 +30,14 @@ RSpec.describe "echo client/server" do
 	# sudo sysctl -w net.inet.ip.portrange.hifirst=10000
 	# Probably due to the use of select.
 	
-	let(:repeats) {RUBY_PLATFORM =~ /darwin/ ? 1000 : 10000}
+	let(:ulimit) do
+		Integer(`ulimit -n`) * 0.9 rescue nil
+	end
+	
+	let(:repeats) do
+		[ulimit, 10_000].compact.min
+	end
+	
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10101)}
 	
 	def echo_server(server_address)
