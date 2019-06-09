@@ -24,7 +24,7 @@ require 'open3'
 
 # require 'ruby-prof'
 
-RSpec.describe "echo client/server" do
+RSpec.describe "echo client/server", if: Process.respond_to?(:fork) do
 	# macOS has a rediculously hard time to do this.
 	# sudo sysctl -w net.inet.ip.portrange.first=10000
 	# sudo sysctl -w net.inet.ip.portrange.hifirst=10000
