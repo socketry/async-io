@@ -65,7 +65,7 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	end
 end
 
-RSpec.describe Async::Container::Forked do
+RSpec.describe Async::Container::Forked, if: Process.respond_to?(:fork) do
 	it_behaves_like Async::IO::SharedEndpoint, described_class
 end
 

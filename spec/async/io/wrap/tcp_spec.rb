@@ -49,7 +49,8 @@ module Wrap
 	end
 end
 
-RSpec.describe Async::IO::TCPSocket do
+# TruffleRuby uses Socket.tcp in Net::HTTP.get_response, not TCPSocket.open
+RSpec.describe Async::IO::TCPSocket, if: RUBY_ENGINE != "truffleruby" do
 	describe "inside reactor" do
 		include_context Async::RSpec::Reactor
 		

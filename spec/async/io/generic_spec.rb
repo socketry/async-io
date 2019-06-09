@@ -27,10 +27,12 @@ RSpec.describe Async::IO::Generic do
 	include_context Async::RSpec::Reactor
 	
 	CONSOLE_METHODS = [:beep, :cooked, :cooked!, :cursor, :cursor=, :echo=, :echo?,:getch, :getpass, :goto, :iflush, :ioflush, :noecho, :oflush,:pressed?, :raw, :raw!, :winsize, :winsize=]
+	# On TruffleRuby, IO#encode_with needs to be defined for YAML.dump as a public method, allow it
+	ignore = [:encode_with]
 	
 	it_should_behave_like Async::IO::Generic, [
 		:bytes, :chars, :codepoints, :each, :each_byte, :each_char, :each_codepoint, :each_line, :getbyte, :getc, :gets, :lineno, :lineno=, :lines, :print, :printf, :putc, :puts, :readbyte, :readchar, :readline, :readlines, :ungetbyte, :ungetc
-	] + CONSOLE_METHODS
+	] + CONSOLE_METHODS + ignore
 	
 	let(:message) {"Hello World!"}
 	
@@ -64,7 +66,7 @@ RSpec.describe Async::IO::Generic do
 					input.wait(1, :read)
 				end
 				
-				expect(duration).to be_within(10).percent_of(wait_duration)
+				expect(duration).to be_within(50).percent_of(wait_duration)
 				expect(input.read(1024)).to be == message
 				
 				input.close
@@ -90,7 +92,7 @@ RSpec.describe Async::IO::Generic do
 					expect(input.wait(wait_duration, :read)).to be_nil
 				end
 				
-				expect(duration).to be_within(10).percent_of(wait_duration)
+				expect(duration).to be_within(50).percent_of(wait_duration)
 				
 				input.close
 			end
