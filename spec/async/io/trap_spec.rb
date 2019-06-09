@@ -23,12 +23,12 @@ require 'async/io/trap'
 RSpec.describe Async::IO::Trap do
 	include_context Async::RSpec::Reactor
 	
-	subject {described_class.new(:USR1)}
+	subject {described_class.new(:USR2)}
 	
 	it "can ignore signal" do
 		subject.ignore!
 		
-		Process.kill(:USR1, Process.pid)
+		Process.kill(:USR2, Process.pid)
 	end
 	
 	it "should wait for signal" do
