@@ -31,11 +31,11 @@ RSpec.describe "echo client/server" do
 	# Probably due to the use of select.
 	
 	let(:ulimit) do
-		Integer(`ulimit -n`) * 0.9 rescue nil
+		Integer(`ulimit -n`) rescue nil
 	end
 	
 	let(:repeats) do
-		[ulimit, 10_000].compact.min
+		[(ulimit&.*0.9)&.floor, 10_000].compact.min
 	end
 	
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10101)}
