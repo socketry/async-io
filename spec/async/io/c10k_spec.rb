@@ -30,12 +30,12 @@ RSpec.describe "echo client/server" do
 	# sudo sysctl -w net.inet.ip.portrange.hifirst=10000
 	# Probably due to the use of select.
 	
-	let(:ulimit) do
-		Integer(`ulimit -n`) rescue nil
-	end
-	
 	let(:repeats) do
-		[(ulimit&.*0.9)&.floor, 10_000].compact.min
+		if limit = Async::IO.file_descriptor_limit
+			[1, limit - 100].max
+		else
+			10_000
+		end
 	end
 	
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 10101)}
