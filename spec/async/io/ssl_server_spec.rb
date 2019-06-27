@@ -36,6 +36,10 @@ RSpec.describe Async::IO::SSLServer do
 		
 		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
 		
+		it "can see through to address" do
+			expect(server_endpoint.address).to be == endpoint.address
+		end
+		
 		it 'can accept_each connections' do
 			# Accept a single incoming connection and then finish.
 			server_task = reactor.async do |task|

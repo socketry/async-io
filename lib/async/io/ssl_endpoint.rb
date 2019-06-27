@@ -40,6 +40,10 @@ module Async
 				"\#<#{self.class} #{@endpoint}>"
 			end
 			
+			def address
+				@endpoint.address
+			end
+			
 			def hostname
 				@options[:hostname] || @endpoint.hostname
 			end
