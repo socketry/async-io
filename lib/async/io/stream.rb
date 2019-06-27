@@ -195,7 +195,6 @@ module Async
 					flush
 				rescue
 					# We really can't do anything here unless we want #close to raise exceptions.
-					Async.logger.error(self) {$!}
 				ensure
 					@io.close
 				end
