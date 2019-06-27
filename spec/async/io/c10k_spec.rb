@@ -32,7 +32,11 @@ RSpec.describe "echo client/server", if: Process.respond_to?(:fork) do
 	
 	let(:repeats) do
 		if limit = Async::IO.file_descriptor_limit
-			[1, limit - 100].max
+			if limit > 1024*10
+				10_000
+			else
+				[1, limit - 100].max
+			end
 		else
 			10_000
 		end
