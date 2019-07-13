@@ -26,7 +26,7 @@ module Async
 		class Stream
 			BLOCK_SIZE = IO::BLOCK_SIZE
 			
-			def initialize(io, block_size: BLOCK_SIZE, sync: true)
+			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true)
 				@io = io
 				@eof = false
 				
@@ -34,6 +34,7 @@ module Async
 				@io.sync = sync
 				
 				@block_size = block_size
+				@maximum_read_size = maximum_read_size
 				
 				@read_buffer = Buffer.new
 				@write_buffer = Buffer.new
@@ -220,6 +221,11 @@ module Async
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer(size = @block_size)
+				# We impose a limit because the underlying `read` system call can fail if we request too much data in one go.
+				if size > @maximum_read_size
+					size = @maximum_read_size
+				end
+				
 				if @read_buffer.empty? and @io.read_nonblock(size, @read_buffer, exception: false)
 					return true
 				elsif chunk = @io.read_nonblock(size, @input_buffer, exception: false)

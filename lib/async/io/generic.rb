@@ -23,9 +23,11 @@ require 'forwardable'
 
 module Async
 	module IO
-		# The default block size for IO buffers.
-		# BLOCK_SIZE = ENV.fetch('BLOCK_SIZE', 1024*16).to_i
-		BLOCK_SIZE = 1024*8
+		# The default block size for IO buffers. Defaults to 8KB.
+		BLOCK_SIZE = ENV.fetch('ASYNC_IO_BLOCK_SIZE', 1024*8).to_i
+		
+		# The maximum read size when appending to IO buffers. Defaults to 8MB.
+		MAXIMUM_READ_SIZE = ENV.fetch('ASYNC_IO_MAXIMUM_READ_SIZE', BLOCK_SIZE * 128 * 8).to_i
 		
 		# Convert a Ruby ::IO object to a wrapped instance:
 		def self.try_convert(io, &block)
