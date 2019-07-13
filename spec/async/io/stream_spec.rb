@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 require 'async/io/socket'
+require 'async/clock'
 
 require_relative 'generic_examples'
 require_relative 'stream_context'
@@ -84,6 +85,28 @@ RSpec.describe Async::IO::Stream do
 					subject.read_exactly(4)
 				end.to raise_error(EOFError)
 			end
+		end
+	end
+	
+	context "performance (BLOCK_SIZE: #{Async::IO::BLOCK_SIZE} MAXIMUM_READ_SIZE: #{Async::IO::MAXIMUM_READ_SIZE})" do
+		include_context Async::RSpec::Reactor
+		
+		let!(:stream) {described_class.open("/dev/zero")}
+		after {stream.close}
+		
+		it "can read data quickly" do |example|
+			data = nil
+			
+			duration = Async::Clock.measure do
+				data = stream.read(4*1024**3)
+			end
+			
+			size = data.bytesize / 1024**2
+			rate = size / duration
+			
+			example.reporter.message "Read #{size.round(2)}MB of data at #{rate.round(2)}MB/s."
+			
+			expect(rate).to be > 1024
 		end
 	end
 	
