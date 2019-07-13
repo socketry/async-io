@@ -26,6 +26,18 @@ module Async
 		class Stream
 			BLOCK_SIZE = IO::BLOCK_SIZE
 			
+			def self.open(path, mode = "r+", **options)
+				stream = self.new(File.open(path, mode), **options)
+				
+				return stream unless block_given?
+				
+				begin
+					yield stream
+				ensure
+					stream.close
+				end
+			end
+			
 			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true)
 				@io = io
 				@eof = false
