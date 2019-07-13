@@ -20,6 +20,6 @@
 
 module Async
 	module IO
-		VERSION = "1.23.3"
+		VERSION = "1.24.0"
 	end
 end
