@@ -46,14 +46,6 @@ RSpec.describe Async::IO::Stream do
 		it_should_behave_like Async::IO
 		
 		describe '#close_read' do
-			let(:sockets) do
-				@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
-			end
-			
-			after do
-				@sockets&.each(&:close)
-			end
-			
 			subject {described_class.new(sockets.last)}
 			
 			it "can close the reading end of the stream" do
