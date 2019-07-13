@@ -106,7 +106,7 @@ RSpec.describe Async::IO::Stream do
 			
 			example.reporter.message "Read #{size.round(2)}MB of data at #{rate.round(2)}MB/s."
 			
-			expect(rate).to be > 1024
+			expect(rate).to be > 512
 		end
 	end
 	
