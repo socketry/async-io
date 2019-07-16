@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 require 'async/io/ssl_socket'
+require 'async/io/ssl_endpoint'
 
 require 'async/rspec/ssl'
 require_relative 'generic_examples'
