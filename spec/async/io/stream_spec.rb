@@ -98,7 +98,7 @@ RSpec.describe Async::IO::Stream do
 			data = nil
 			
 			duration = Async::Clock.measure do
-				data = stream.read(4*1024**3)
+				data = stream.read(1024**3)
 			end
 			
 			size = data.bytesize / 1024**2
