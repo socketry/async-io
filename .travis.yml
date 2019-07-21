@@ -14,6 +14,11 @@ matrix:
     - rvm: jruby-head
       env: JRUBY_OPTS="--debug -X+O"
     - rvm: ruby-head
+    - rvm: 2.6
+      os: osx
+    - rvm: 2.6
+      os: osx
+      gemfile: gems/nio4r-2.3.gemfile
   allow_failures:
     - rvm: ruby-head
     - rvm: truffleruby
