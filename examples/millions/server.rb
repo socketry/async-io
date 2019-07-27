@@ -18,7 +18,7 @@ class Server
 			task.async do |subtask|
 				while true
 					subtask.sleep 10
-					puts "Connection count: #{@connections.count}"
+					puts "Connection count: #{@connections.size}"
 				end
 			end
 				

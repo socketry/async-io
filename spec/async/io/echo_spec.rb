@@ -68,6 +68,6 @@ RSpec.describe "echo client/server" do
 		tasks.each(&:wait)
 		server.stop
 		
-		expect(responses.count).to be repeats
+		expect(responses.size).to be repeats
 	end
 end

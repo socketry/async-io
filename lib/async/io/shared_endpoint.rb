@@ -104,7 +104,7 @@ module Async
 			end
 			
 			def to_s
-				"\#<#{self.class} #{@wrappers.count} descriptors for #{@endpoint}>"
+				"\#<#{self.class} #{@wrappers.size} descriptors for #{@endpoint}>"
 			end
 		end
 	end

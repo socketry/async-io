@@ -51,13 +51,13 @@ RSpec.describe "echo client/server", if: Process.respond_to?(:fork) do
 			Async::IO::Socket.bind(server_address) do |server|
 				server.listen(Socket::SOMAXCONN)
 				
-				while connections.count < repeats
+				while connections.size < repeats
 					peer, address = server.accept
 					connections << peer
 				end
 			end.wait
 			
-			puts "Releasing #{connections.count} connections..."
+			puts "Releasing #{connections.size} connections..."
 			
 			while connection = connections.pop
 				connection.write(".")
@@ -124,7 +124,7 @@ RSpec.describe "echo client/server", if: Process.respond_to?(:fork) do
 				
 				tasks.each(&:wait)
 				
-				expect(responses.count).to be repeats
+				expect(responses.size).to be repeats
 			end
 			
 		# ensure
