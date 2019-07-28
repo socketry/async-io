@@ -66,7 +66,7 @@ RSpec.describe Async::IO::Generic do
 					input.wait(1, :read)
 				end
 				
-				expect(duration).to be_within(50).percent_of(wait_duration)
+				expect(duration).to be_within(100).percent_of(wait_duration)
 				expect(input.read(1024)).to be == message
 				
 				input.close
@@ -92,7 +92,7 @@ RSpec.describe Async::IO::Generic do
 					expect(input.wait(wait_duration, :read)).to be_nil
 				end
 				
-				expect(duration).to be_within(50).percent_of(wait_duration)
+				expect(duration).to be_within(100).percent_of(wait_duration)
 				
 				input.close
 			end
