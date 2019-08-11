@@ -93,7 +93,7 @@ module Async
 		
 		module Server
 			def accept_each(timeout: nil, task: Task.current)
-				task.annotate "accepting connections #{self.local_address.inspect}"
+				task.annotate "accepting connections #{self.local_address.inspect} [fd=#{self.fileno}]"
 				
 				callback = lambda do |io, address|
 					yield io, address, task: task
@@ -131,7 +131,7 @@ module Async
 				return wrapper, address unless block_given?
 				
 				task.async do |task|
-					task.annotate "incoming connection #{address.inspect}"
+					task.annotate "incoming connection #{address.inspect} [fd=#{wrapper.fileno}]"
 					
 					begin
 						yield wrapper, address
@@ -197,7 +197,7 @@ module Async
 				
 				begin
 					wrapper.connect(remote_address.to_sockaddr)
-					task.annotate "connected to #{remote_address.inspect}"
+					task.annotate "connected to #{remote_address.inspect} [fd=#{wrapper.fileno}]"
 				rescue Exception
 					wrapper.close
 					raise

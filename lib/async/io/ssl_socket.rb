@@ -111,6 +111,10 @@ module Async
 				@context = context
 			end
 			
+			def fileno
+				@server.fileno
+			end
+			
 			def dup
 				self.class.new(@server.dup, @context)
 			end

@@ -86,7 +86,7 @@ module Async
 					peer = peer.dup
 					
 					task.async do |task|
-						task.annotate "connected to #{peer.inspect}"
+						task.annotate "connected to #{peer.inspect} [#{peer.fileno}]"
 						
 						begin
 							yield peer, task
