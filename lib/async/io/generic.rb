@@ -38,6 +38,10 @@ module Async
 			end
 		end
 		
+		def self.pipe
+			::IO.pipe.map(&Generic.method(:new))
+		end
+		
 		# Represents an asynchronous IO within a reactor.
 		class Generic < Wrapper
 			extend Forwardable
