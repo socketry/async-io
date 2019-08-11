@@ -84,9 +84,7 @@ module Async
 				return '' if size == 0
 				
 				unless @eof
-					if size and @read_buffer.bytesize < size
-						fill_read_buffer(size > @block_size ? size : @block_size)
-					elsif @read_buffer.empty?
+					if @read_buffer.empty?
 						fill_read_buffer
 					end
 				end
