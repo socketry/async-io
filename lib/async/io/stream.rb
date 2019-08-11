@@ -82,11 +82,9 @@ module Async
 			# Read at most `size` bytes from the stream. Will avoid reading from the underlying stream if possible.
 			def read_partial(size = nil)
 				return '' if size == 0
-				
-				unless @eof
-					if @read_buffer.empty?
-						fill_read_buffer
-					end
+			
+				if !@eof and @read_buffer.empty?
+					fill_read_buffer
 				end
 				
 				return consume_read_buffer(size)
@@ -213,9 +211,13 @@ module Async
 			
 			# Returns true if the stream is at file which means there is no more data to be read.
 			def eof?
-				fill_read_buffer if !@eof && @read_buffer.empty?
+				return false unless @read_buffer.empty?
 				
-				return @eof && @read_buffer.empty?
+				if !@eof
+					fill_read_buffer
+				end
+				
+				return @eof
 			end
 			
 			alias eof eof?
@@ -236,16 +238,20 @@ module Async
 					size = @maximum_read_size
 				end
 				
-				if @read_buffer.empty? and @io.read_nonblock(size, @read_buffer, exception: false)
-					return true
-				elsif chunk = @io.read_nonblock(size, @input_buffer, exception: false)
-					@read_buffer << chunk
-					return true
+				if @read_buffer.empty?
+					if @io.read_nonblock(size, @read_buffer, exception: false)
+						return true
+					end
 				else
-					# We didn't read anything, so we must be at eof:
-					@eof = true
-					return false
+					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
+						@read_buffer << chunk
+						return true
+					end
 				end
+				
+				# else for both cases above:
+				@eof = true
+				return false
 			end
 			
 			# Consumes at most `size` bytes from the buffer.
