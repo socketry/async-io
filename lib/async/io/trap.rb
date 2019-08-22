@@ -39,6 +39,10 @@ module Async
 				Signal.trap(@name, "IGNORE")
 			end
 			
+			def default!
+				Signal.trap(@name, "DEFAULT")
+			end
+			
 			# Install the trap into the current process. Thread safe.
 			# @return [Boolean] whether the trap was installed or not. If the trap was already installed, returns nil.
 			def install!
@@ -56,8 +60,7 @@ module Async
 			end
 			
 			# Block the calling task until the signal occurs.
-			def trap
-				task = Task.current
+			def trap(task: Task.current, &block)
 				task.annotate("waiting for signal #{@name}")
 				
 				notification = Notification.new
@@ -65,12 +68,18 @@ module Async
 				
 				while true
 					notification.wait
-					yield
+					yield task
 				end
 			ensure
 				if notification
 					notification.close
 					@notifications.delete(notification)
+				end
+			end
+			
+			def async(task: Task.current, &block)
+				task.async do |subtask|
+					self.trap(task: subtask, &block)
 				end
 			end
 			
