@@ -36,11 +36,11 @@ module Async
 			
 			# Ignore the trap within the current process. Can be invoked before forking and/or invoking `install!` to assert default behaviour.
 			def ignore!
-				Signal.trap(@name, "IGNORE")
+				Signal.trap(@name, :IGNORE)
 			end
 			
 			def default!
-				Signal.trap(@name, "DEFAULT")
+				Signal.trap(@name, :DEFAULT)
 			end
 			
 			# Install the trap into the current process. Thread safe.
@@ -59,16 +59,21 @@ module Async
 				return true
 			end
 			
-			# Block the calling task until the signal occurs.
-			def trap(task: Task.current, &block)
+			# Wait until the signal occurs. If a block is given, execute in a loop.
+			# @yield [Async::Task] the current task.
+			def wait(task: Task.current, &block)
 				task.annotate("waiting for signal #{@name}")
 				
 				notification = Notification.new
 				@notifications << notification
 				
-				while true
+				if block_given?
+					while true
+						notification.wait
+						yield task
+					end
+				else
 					notification.wait
-					yield task
 				end
 			ensure
 				if notification
@@ -77,9 +82,17 @@ module Async
 				end
 			end
 			
-			def async(task: Task.current, &block)
+			# Deprecated.
+			alias trap wait
+			
+			def async(task: Task.current, once: false, &block)
 				task.async do |subtask|
-					self.trap(task: subtask, &block)
+					if once
+						self.trap(task: subtask)
+						yield subtask
+					else
+						self.trap(task: subtask, &block)
+					end
 				end
 			end
 			

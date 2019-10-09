@@ -35,7 +35,7 @@ RSpec.describe Async::IO::Trap do
 		trapped = false
 		
 		waiting_task = reactor.async do
-			subject.trap do
+			subject.wait do
 				trapped = true
 				break
 			end
