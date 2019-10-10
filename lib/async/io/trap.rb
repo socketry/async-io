@@ -85,14 +85,9 @@ module Async
 			# Deprecated.
 			alias trap wait
 			
-			def async(task: Task.current, once: false, &block)
-				task.async do |subtask|
-					if once
-						self.trap(task: subtask)
-						yield subtask
-					else
-						self.trap(task: subtask, &block)
-					end
+			def async(parent: Task.current, &block)
+				parent.async do |task|
+					self.trap(task: task, &block)
 				end
 			end
 			

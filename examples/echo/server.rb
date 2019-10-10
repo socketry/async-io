@@ -17,7 +17,9 @@ Async do |top|
 	endpoint.bind do |server, task|
 		Async.logger.info(server) {"Accepting connections on #{server.local_address.inspect}"}
 		
-		interrupt.async(once: true) do |subtask|
+		task.async do |subtask|
+			interrupt.wait
+			
 			Async.logger.info(server) {"Closing server socket..."}
 			server.close
 			
@@ -26,8 +28,14 @@ Async do |top|
 			Async.logger.info(server) {"Waiting for connections to close..."}
 			subtask.sleep(4)
 			
-			Async.logger.info(server) {"Stopping server task..."}
-			top.stop
+			Async.logger.info(server) do |buffer|
+				buffer.puts "Stopping all tasks..."
+				task.print_hierarchy(buffer)
+				buffer.puts "", "Reactor Hierarchy"
+				task.reactor.print_hierarchy(buffer)
+			end
+			
+			task.stop
 		end
 		
 		server.listen(128)
@@ -39,11 +47,11 @@ Async do |top|
 				Async.logger.debug(self) {chunk.inspect}
 				stream.write(chunk)
 				stream.flush
+				
+				Async.logger.info(server) do |buffer|
+					task.reactor.print_hierarchy(buffer)
+				end
 			end
 		end
-		
-		Async.logger.debug(self) {"waiting for children..."}
-		task.children.each(&:wait)
-		Async.logger.debug(self) {"exiting..."}
 	end
 end
