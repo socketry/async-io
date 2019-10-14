@@ -38,9 +38,12 @@ module Async
 				end
 			end
 			
-			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true)
+			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true, reactor: nil)
 				@io = io
 				@eof = false
+				@pending = 0
+				
+				@reactor = reactor
 				
 				# We don't want Ruby to do any IO buffering.
 				@io.sync = sync
@@ -54,6 +57,8 @@ module Async
 				# Used as destination buffer for underlying reads.
 				@input_buffer = Buffer.new
 			end
+			
+			attr_accessor :reactor
 			
 			attr :io
 			attr :block_size
@@ -161,9 +166,29 @@ module Async
 			# Flushes buffered data to the stream.
 			def flush
 				unless @write_buffer.empty?
-					@io.write(@write_buffer)
-					@write_buffer.clear
+					if @reactor
+						if @pending.zero?
+							@reactor << self
+						end
+						
+						@pending += 1
+					else
+						@io.write(@write_buffer)
+						@write_buffer.clear
+						@pending = 0
+					end
 				end
+			end
+			
+			def alive?
+				@pending > 0
+			end
+			
+			def resume
+				# Async.logger.warn(self) {"Flushing #{@pending} writes (#{@write_buffer.bytesize} bytes)..."}
+				@io.write(@write_buffer)
+				@write_buffer.clear
+				@pending = 0
 			end
 			
 			def gets(separator = $/, **options)
@@ -191,7 +216,7 @@ module Async
 			end
 			
 			def close_write
-				flush
+				resume unless @write_buffer.empty?
 			ensure
 				@io.close_write
 			end
@@ -201,7 +226,7 @@ module Async
 				return if @io.closed?
 				
 				begin
-					flush
+					resume unless @write_buffer.empty?
 				rescue
 					# We really can't do anything here unless we want #close to raise exceptions.
 				ensure

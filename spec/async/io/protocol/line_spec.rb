@@ -19,14 +19,19 @@
 # THE SOFTWARE.
 
 require 'async/io/protocol/line'
+require 'async/io/socket'
 
 RSpec.describe Async::IO::Protocol::Line do
-	let(:io) {StringIO.new}
-	let(:stream) {Async::IO::Stream.new(io)}
-	subject {described_class.new(stream, "\n")}
+	include_context Async::RSpec::Reactor
+	
+	let(:pipe) {@pipe = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)}
+	let(:remote) {pipe.first}
+	subject {described_class.new(Async::IO::Stream.new(pipe.last, reactor: reactor), "\n")}
+	
+	after(:each) {@pipe&.each(&:close)}
 	
 	context "default line ending" do
-		subject {described_class.new(stream)}
+		subject {described_class.new(nil)}
 		
 		it "should have default eol terminator" do
 			expect(subject.eol).to_not be_nil
@@ -36,15 +41,16 @@ RSpec.describe Async::IO::Protocol::Line do
 	describe '#write_lines' do
 		it "should write line" do
 			subject.write_lines "Hello World"
+			subject.close
 			
-			expect(io.string).to be == "Hello World\n"
+			expect(remote.read).to be == "Hello World\n"
 		end
 	end
 	
 	describe '#read_line' do
 		before(:each) do
-			io.puts "Hello World"
-			io.seek(0)
+			remote.write "Hello World\n"
+			remote.close
 		end
 		
 		it "should read one line" do
@@ -58,8 +64,8 @@ RSpec.describe Async::IO::Protocol::Line do
 	
 	describe '#read_lines' do
 		before(:each) do
-			io << "Hello\nWorld\n"
-			io.seek(0)
+			remote.write "Hello\nWorld\n"
+			remote.close
 		end
 		
 		it "should read multiple lines" do
