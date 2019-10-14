@@ -28,7 +28,7 @@ RSpec.describe Async::IO::Generic do
 	
 	CONSOLE_METHODS = [:beep, :cooked, :cooked!, :cursor, :cursor=, :echo=, :echo?,:getch, :getpass, :goto, :iflush, :ioflush, :noecho, :oflush,:pressed?, :raw, :raw!, :winsize, :winsize=]
 	# On TruffleRuby, IO#encode_with needs to be defined for YAML.dump as a public method, allow it
-	ignore = [:encode_with]
+	ignore = [:encode_with, :check_winsize_changed, :clear_screen, :console_mode, :console_mode=, :cursor_down, :cursor_left, :cursor_right, :cursor_up, :erase_line, :erase_screen, :goto_column, :scroll_backward, :scroll_forward]
 	
 	it_should_behave_like Async::IO::Generic, [
 		:bytes, :chars, :codepoints, :each, :each_byte, :each_char, :each_codepoint, :each_line, :getbyte, :getc, :gets, :lineno, :lineno=, :lines, :print, :printf, :putc, :puts, :readbyte, :readchar, :readline, :readlines, :ungetbyte, :ungetc
