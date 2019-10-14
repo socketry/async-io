@@ -26,7 +26,7 @@ RSpec.describe Async::IO::Protocol::Line do
 	
 	let(:pipe) {@pipe = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)}
 	let(:remote) {pipe.first}
-	subject {described_class.new(Async::IO::Stream.new(pipe.last, reactor: reactor), "\n")}
+	subject {described_class.new(Async::IO::Stream.new(pipe.last, deferred: true), "\n")}
 	
 	after(:each) {@pipe&.each(&:close)}
 	
