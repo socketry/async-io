@@ -173,6 +173,8 @@ module Async
 						
 						@pending += 1
 					else
+						Async.logger.debug(self) {"Flushing immediate write (#{@write_buffer.bytesize} bytes)..."}
+						
 						@io.write(@write_buffer)
 						@write_buffer.clear
 						@pending = 0
@@ -185,7 +187,8 @@ module Async
 			end
 			
 			def resume
-				# Async.logger.warn(self) {"Flushing #{@pending} writes (#{@write_buffer.bytesize} bytes)..."}
+				Async.logger.debug(self) {"Flushing #{@pending} writes (#{@write_buffer.bytesize} bytes)..."}
+				
 				@io.write(@write_buffer)
 				@write_buffer.clear
 				@pending = 0
