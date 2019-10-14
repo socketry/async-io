@@ -38,12 +38,12 @@ module Async
 				end
 			end
 			
-			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true, reactor: nil)
+			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true, deferred: nil)
 				@io = io
 				@eof = false
-				@pending = 0
 				
-				@reactor = reactor
+				@deferred = deferred
+				@pending = 0
 				
 				# We don't want Ruby to do any IO buffering.
 				@io.sync = sync
@@ -166,9 +166,9 @@ module Async
 			# Flushes buffered data to the stream.
 			def flush
 				unless @write_buffer.empty?
-					if @reactor
+					if @deferred and task = Task.current
 						if @pending.zero?
-							@reactor << self
+							task.reactor << self
 						end
 						
 						@pending += 1
