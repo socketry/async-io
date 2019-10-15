@@ -67,7 +67,7 @@ module Async
 				return '' if size == 0
 				
 				if size
-					until @eof or @read_buffer.size >= size
+					until @eof or @read_buffer.bytesize >= size
 						# Compute the amount of data we need to read from the underlying stream:
 						read_size = size - @read_buffer.bytesize
 						
@@ -116,7 +116,7 @@ module Async
 				split_offset = pattern.bytesize - 1
 				
 				until index = @read_buffer.index(pattern, offset)
-					offset = @read_buffer.size - split_offset
+					offset = @read_buffer.bytesize - split_offset
 					
 					offset = 0 if offset < 0
 					
@@ -146,7 +146,7 @@ module Async
 				else
 					@write_buffer << string
 					
-					if @write_buffer.size >= @block_size
+					if @write_buffer.bytesize >= @block_size
 						drain_write_buffer
 					end
 				end
@@ -293,7 +293,7 @@ module Async
 				
 				result = nil
 				
-				if size.nil? or size >= @read_buffer.size
+				if size.nil? or size >= @read_buffer.bytesize
 					# Consume the entire read buffer:
 					result = @read_buffer
 					@read_buffer = Buffer.new
