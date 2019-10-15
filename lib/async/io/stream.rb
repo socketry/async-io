@@ -252,6 +252,7 @@ module Async
 			
 			def drain_write_buffer
 				unless @write_buffer.empty?
+					# Async.logger.debug(self, name: "write") {@write_buffer.inspect}
 					@io.write(@write_buffer)
 					@write_buffer.clear
 				end
@@ -266,11 +267,13 @@ module Async
 				
 				if @read_buffer.empty?
 					if @io.read_nonblock(size, @read_buffer, exception: false)
+						# Async.logger.debug(self, name: "read") {@read_buffer.inspect}
 						return true
 					end
 				else
 					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
 						@read_buffer << chunk
+						# Async.logger.debug(self, name: "read") {@read_buffer.inspect}
 						return true
 					end
 				end
