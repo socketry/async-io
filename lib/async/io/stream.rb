@@ -38,7 +38,7 @@ module Async
 				end
 			end
 			
-			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true, deferred: nil)
+			def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, sync: true, deferred: false)
 				@io = io
 				@eof = false
 				
@@ -57,8 +57,6 @@ module Async
 				# Used as destination buffer for underlying reads.
 				@input_buffer = Buffer.new
 			end
-			
-			attr_accessor :reactor
 			
 			attr :io
 			attr :block_size
@@ -164,34 +162,27 @@ module Async
 			end
 			
 			# Flushes buffered data to the stream.
-			def flush
+			def flush(deferred: @deferred)
 				unless @write_buffer.empty?
-					if @deferred and task = Task.current
+					if deferred and task = Task.current?
 						if @pending.zero?
-							task.reactor << self
+							@pending += 1
+							task.yield
+						else
+							@pending += 1
+							# task.yield
+							return
 						end
 						
-						@pending += 1
+						Async.logger.debug(self) {"Flushing #{@pending} writes (#{@write_buffer.bytesize} bytes)..."}
+						
+						@pending = 0
 					else
 						Async.logger.debug(self) {"Flushing immediate write (#{@write_buffer.bytesize} bytes)..."}
-						
-						@io.write(@write_buffer)
-						@write_buffer.clear
-						@pending = 0
 					end
+					
+					drain_write_buffer
 				end
-			end
-			
-			def alive?
-				@pending > 0
-			end
-			
-			def resume
-				Async.logger.debug(self) {"Flushing #{@pending} writes (#{@write_buffer.bytesize} bytes)..."}
-				
-				@io.write(@write_buffer)
-				@write_buffer.clear
-				@pending = 0
 			end
 			
 			def gets(separator = $/, **options)
@@ -219,7 +210,7 @@ module Async
 			end
 			
 			def close_write
-				resume unless @write_buffer.empty?
+				drain_write_buffer
 			ensure
 				@io.close_write
 			end
@@ -229,7 +220,7 @@ module Async
 				return if @io.closed?
 				
 				begin
-					resume unless @write_buffer.empty?
+					drain_write_buffer
 				rescue
 					# We really can't do anything here unless we want #close to raise exceptions.
 				ensure
@@ -258,6 +249,13 @@ module Async
 			end
 			
 			private
+			
+			def drain_write_buffer
+				unless @write_buffer.empty?
+					@io.write(@write_buffer)
+					@write_buffer.clear
+				end
+			end
 			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer(size = @block_size)
