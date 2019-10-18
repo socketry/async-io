@@ -123,6 +123,12 @@ Async do |task|
 end
 ```
 
+### Deferred Buffering
+
+`Async::IO::Stream.new(..., deferred:true)` creates a deferred stream which increases latency slightly, but reduces the number of total packets sent. It does this by combining all calls `Stream#flush` within a single iteration of the reactor. This is typically more useful on the client side, but can also be useful on the server side when individual packets have high latency. It should be preferable to send one 100 byte packet than 10x 10 byte packets.
+
+Servers typically only deal with one request per iteartion of the reactor so it's less useful. Clients which make multiple requests can benefit significantly e.g. HTTP/2 clients can merge many requests into a single packet. Because HTTP/2 recommends disabling Nagle's algorithm, this is often beneficial.
+
 ## Contributing
 
 1. Fork it

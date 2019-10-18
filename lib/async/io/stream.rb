@@ -59,6 +59,7 @@ module Async
 			end
 			
 			attr :io
+			
 			attr :block_size
 			
 			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
@@ -146,8 +147,7 @@ module Async
 					@write_buffer << string
 					
 					if @write_buffer.size >= @block_size
-						@io.write(@write_buffer)
-						@write_buffer.clear
+						drain_write_buffer
 					end
 				end
 				
@@ -163,25 +163,16 @@ module Async
 			
 			# Flushes buffered data to the stream.
 			def flush(deferred: @deferred)
-				unless @write_buffer.empty?
-					if deferred and task = Task.current?
-						if @pending.zero?
-							@pending += 1
-							task.yield
-						else
-							@pending += 1
-							# task.yield
-							return
-						end
-						
-						Async.logger.debug(self) {"Flushing #{@pending} writes (#{@write_buffer.bytesize} bytes)..."}
-						
-						@pending = 0
-					else
-						Async.logger.debug(self) {"Flushing immediate write (#{@write_buffer.bytesize} bytes)..."}
-					end
+				if deferred and task = Task.current?
+					@pending += 1
 					
-					drain_write_buffer
+					if @pending == 1
+						task.yield
+						drain_write_buffer unless @write_buffer.empty?
+						@pending = 0
+					end
+				else
+					drain_write_buffer unless @write_buffer.empty?
 				end
 			end
 			
@@ -189,9 +180,9 @@ module Async
 				read_until(separator, **options)
 			end
 			
-			def puts(*args, separator: $/)
-				args.each do |arg|
-					@write_buffer << arg << separator
+			def puts(*arguments, separator: $/)
+				arguments.each do |argument|
+					@write_buffer << argument << separator
 				end
 				
 				flush
@@ -220,7 +211,7 @@ module Async
 				return if @io.closed?
 				
 				begin
-					drain_write_buffer
+					drain_write_buffer unless @write_buffer.empty?
 				rescue
 					# We really can't do anything here unless we want #close to raise exceptions.
 				ensure
@@ -251,11 +242,17 @@ module Async
 			private
 			
 			def drain_write_buffer
-				unless @write_buffer.empty?
-					# Async.logger.debug(self, name: "write") {@write_buffer.inspect}
-					@io.write(@write_buffer)
-					@write_buffer.clear
+				Async.logger.debug(self) do
+					if @pending > 0
+						"Draining #{@pending} writes (#{@write_buffer.bytesize} bytes)..."
+					else
+						"Draining immediate write (#{@write_buffer.bytesize} bytes)..."
+					end
 				end
+				
+				# Async.logger.debug(self, name: "write") {@write_buffer.inspect}
+				@io.write(@write_buffer)
+				@write_buffer.clear
 			end
 			
 			# Fills the buffer from the underlying stream.
@@ -263,6 +260,11 @@ module Async
 				# We impose a limit because the underlying `read` system call can fail if we request too much data in one go.
 				if size > @maximum_read_size
 					size = @maximum_read_size
+				end
+				
+				# This effectively ties the input and output stream together.
+				if @pending > 0
+					drain_write_buffer
 				end
 				
 				if @read_buffer.empty?
