@@ -29,10 +29,8 @@ require_relative "io/endpoint/each"
 
 module Async
 	module IO
-		@file_descriptor_limit = nil
-		
 		def self.file_descriptor_limit
-			@file_descriptor_limit ||= Integer(`ulimit -n`) rescue nil
+			Process.getrlimit(Process::RLIMIT_NOFILE).first
 		end
 	end
 end
