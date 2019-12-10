@@ -49,6 +49,6 @@ RSpec.describe Async::IO::UDPSocket do
 			client.close
 			
 			expect(response).to be == data
-		end
+		end.wait
 	end
 end
