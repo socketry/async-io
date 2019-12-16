@@ -4,6 +4,7 @@ require_relative 'lib/async/io/version'
 Gem::Specification.new do |spec|
 	spec.name          = "async-io"
 	spec.version       = Async::IO::VERSION
+	spec.licenses      = ["MIT"]
 	spec.authors       = ["Samuel Williams"]
 	spec.email         = ["samuel.williams@oriontransfer.co.nz"]
 
