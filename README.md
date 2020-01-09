@@ -4,7 +4,7 @@ Async::IO provides builds on [async] and provides asynchronous wrappers for `IO`
 
 [async]: https://github.com/socketry/async
 
-[![Build Status](https://secure.travis-ci.org/socketry/async-io.svg)](http://travis-ci.org/socketry/async-io)
+[![Build Status](https://travis-ci.com/socketry/async-io.svg?branch=master)](https://travis-ci.com/socketry/async-io)
 [![Code Climate](https://codeclimate.com/github/socketry/async-io.svg)](https://codeclimate.com/github/socketry/async-io)
 [![Coverage Status](https://coveralls.io/repos/socketry/async-io/badge.svg)](https://coveralls.io/r/socketry/async-io)
 
