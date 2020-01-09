@@ -24,8 +24,7 @@ require 'async/rspec/ssl'
 require 'async/io/host_endpoint'
 require 'async/io/shared_endpoint'
 
-require 'async/container/forked'
-require 'async/container/threaded'
+require 'async/container'
 
 RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	include_context Async::RSpec::SSL::VerifiedContexts
@@ -44,23 +43,20 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 	let(:container) {container_class.new}
 	
 	it "can use bound endpoint in container" do
-		container.run(count: 1) do
+		container.async do
 			bound_endpoint.accept do |peer|
 				peer.write "Hello World"
 				peer.close
 			end
 		end
 		
-		container.wait do
-			Async do
-				client_endpoint.connect do |peer|
-					expect(peer.read(11)).to eq "Hello World"
-				end
+		Async do
+			client_endpoint.connect do |peer|
+				expect(peer.read(11)).to eq "Hello World"
 			end
-			
-			container.stop(false)
 		end
 		
+		container.stop(false)
 		bound_endpoint.close
 	end
 end
