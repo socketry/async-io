@@ -19,7 +19,10 @@
 # THE SOFTWARE.
 
 require 'async/io/endpoint'
+
 require 'async/io/tcp_socket'
+require 'async/io/socket_endpoint'
+require 'async/io/ssl_endpoint'
 
 RSpec.describe Async::IO::Endpoint do
 	include_context Async::RSpec::Reactor

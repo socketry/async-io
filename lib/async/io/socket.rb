@@ -21,64 +21,12 @@
 require 'socket'
 require 'async/task'
 
+require_relative 'peer'
+require_relative 'server'
 require_relative 'generic'
 
 module Async
 	module IO
-		module Peer
-			include ::Socket::Constants
-			
-			# Is it likely that the socket is still connected?
-			# May return false positive, but won't return false negative.
-			def connected?
-				return false if @io.closed?
-				
-				# If we can wait for the socket to become readable, we know that the socket may still be open.
-				result = to_io.recv_nonblock(1, MSG_PEEK, exception: false)
-				
-				# Either there was some data available, or we can wait to see if there is data avaialble.
-				return !result.empty? || result == :wait_readable
-				
-			rescue Errno::ECONNRESET
-				# This might be thrown by recv_nonblock.
-				return false
-			end
-			
-			# Best effort to set *_NODELAY if it makes sense. Swallows errors where possible.
-			def sync=(value)
-				super
-				
-				case self.protocol
-				when 0, IPPROTO_TCP
-					self.setsockopt(IPPROTO_TCP, TCP_NODELAY, value ? 1 : 0)
-				else
-					Async.logger.warn(self) {"Unsure how to sync=#{value} for #{self.protocol}!"}
-				end
-			rescue Errno::EINVAL
-				# On Darwin, sometimes occurs when the connection is not yet fully formed. Empirically, TCP_NODELAY is enabled despite this result.
-			rescue Errno::EOPNOTSUPP
-				# Some platforms may simply not support the operation.
-				# Async.logger.warn(self) {"Unable to set sync=#{value}!"}
-			end
-			
-			def sync
-				case self.protocol
-				when IPPROTO_TCP
-					self.getsockopt(IPPROTO_TCP, TCP_NODELAY).bool
-				else
-					true
-				end && super
-			end
-			
-			def type
-				self.local_address.socktype
-			end
-			
-			def protocol
-				self.local_address.protocol
-			end
-		end
-		
 		class BasicSocket < Generic
 			wraps ::BasicSocket, :setsockopt, :connect_address, :close_read, :close_write, :local_address, :remote_address, :do_not_reverse_lookup, :do_not_reverse_lookup=, :shutdown, :getsockopt, :getsockname, :getpeername, :getpeereid
 			
@@ -89,20 +37,6 @@ module Async
 			wrap_blocking_method :send, :sendmsg_nonblock, invert: false
 			
 			include Peer
-		end
-		
-		module Server
-			def accept_each(timeout: nil, task: Task.current)
-				task.annotate "accepting connections #{self.local_address.inspect} [fd=#{self.fileno}]"
-				
-				callback = lambda do |io, address|
-					yield io, address, task: task
-				end
-				
-				while true
-					self.accept(timeout: timeout, task: task, &callback)
-				end
-			end
 		end
 		
 		class Socket < BasicSocket

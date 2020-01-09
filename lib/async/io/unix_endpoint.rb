@@ -64,7 +64,7 @@ module Async
 			# @param options keyword arguments passed through to {UNIXEndpoint#initialize}
 			#
 			# @return [UNIXEndpoint]
-			def self.unix(path, type = ::Socket::SOCK_STREAM, **options)
+			def self.unix(path = "", type = ::Socket::SOCK_STREAM, **options)
 				UNIXEndpoint.new(path, type, **options)
 			end
 		end
