@@ -223,13 +223,13 @@ RSpec.describe Async::IO::Stream do
 		
 		describe '#flush' do
 			it "should not call write if write buffer is empty" do
-				expect(subject.io).to_not receive(:write_nonblock)
+				expect(subject.io).to_not receive(:write)
 				
 				subject.flush
 			end
 		
 			it "should flush underlying data when it exceeds block size" do
-				expect(subject.io).to receive(:write_nonblock).and_call_original.once
+				expect(subject.io).to receive(:write).and_call_original.once
 				
 				subject.block_size.times do
 					subject.write("!")
@@ -276,7 +276,7 @@ RSpec.describe Async::IO::Stream do
 		
 		describe '#write' do
 			it "should read one line" do
-				expect(subject.io).to receive(:write_nonblock).and_call_original.once
+				expect(subject.io).to receive(:write).and_call_original.once
 				
 				subject.write "Hello World\n"
 				subject.flush

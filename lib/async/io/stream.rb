@@ -56,6 +56,7 @@ module Async
 				
 				@read_buffer = Buffer.new
 				@write_buffer = Buffer.new
+				@drain_buffer = Buffer.new
 				
 				# Used as destination buffer for underlying reads.
 				@input_buffer = Buffer.new
@@ -250,29 +251,10 @@ module Async
 						end
 					end
 					
-					# Fast path:
-					buffer = @write_buffer
-					written = @io.write_nonblock(buffer)
-					remaining = buffer.bytesize - written
+					@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
 					
-					if remaining.zero?
-						@write_buffer.clear
-						return written
-					else
-						# We are now potentially blocking, so make a new write buffer:
-						@write_buffer = Buffer.new
-					end
-					
-					# Now flush the remainder of the current buffer:
-					while remaining > 0
-						# Slow path:
-						length = self.write_nonblock(buffer.byteslice(written, remaining))
-						
-						remaining -= length
-						written += length
-					end
-					
-					return written
+					@io.write(@drain_buffer)
+					@drain_buffer.clear
 				end
 			end
 			
