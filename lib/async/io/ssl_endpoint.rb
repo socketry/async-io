@@ -55,7 +55,7 @@ module Async
 				@options[:ssl_params]
 			end
 			
-			def build_context(context = ::OpenSSL::SSL::SSLContext.new)
+			def build_context(context = OpenSSL::SSL::SSLContext.new)
 				if params = self.params
 					context.set_params(params)
 				end
