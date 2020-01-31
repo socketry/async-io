@@ -21,6 +21,8 @@
 require_relative 'buffer'
 require_relative 'generic'
 
+require 'async/semaphore'
+
 module Async
 	module IO
 		class Stream
@@ -44,6 +46,7 @@ module Async
 				
 				@deferred = deferred
 				@pending = 0
+				@writing = Async::Semaphore.new(1)
 				
 				# We don't want Ruby to do any IO buffering.
 				@io.sync = sync
@@ -136,29 +139,8 @@ module Async
 				end
 			end
 			
-			# Writes `string` to the buffer. When the buffer is full or #sync is true the
-			# buffer is flushed to the underlying `io`.
-			# @param string the string to write to the buffer.
-			# @return the number of bytes appended to the buffer.
-			def write(string)
-				if @write_buffer.empty? and string.bytesize >= @block_size
-					@io.write(string)
-				else
-					@write_buffer << string
-					
-					if @write_buffer.bytesize >= @block_size
-						drain_write_buffer
-					end
-				end
-				
-				return string.bytesize
-			end
-			
-			# Writes `string` to the stream and returns self.
-			def <<(string)
-				write(string)
-				
-				return self
+			def gets(separator = $/, **options)
+				read_until(separator, **options)
 			end
 			
 			# Flushes buffered data to the stream.
@@ -176,8 +158,25 @@ module Async
 				end
 			end
 			
-			def gets(separator = $/, **options)
-				read_until(separator, **options)
+			# Writes `string` to the buffer. When the buffer is full or #sync is true the
+			# buffer is flushed to the underlying `io`.
+			# @param string the string to write to the buffer.
+			# @return the number of bytes appended to the buffer.
+			def write(string)
+				@write_buffer << string
+				
+				if @write_buffer.bytesize >= @block_size
+					flush
+				end
+				
+				return string.bytesize
+			end
+			
+			# Writes `string` to the stream and returns self.
+			def <<(string)
+				write(string)
+				
+				return self
 			end
 			
 			def puts(*arguments, separator: $/)
@@ -201,7 +200,7 @@ module Async
 			end
 			
 			def close_write
-				drain_write_buffer
+				drain_write_buffer unless @write_buffer.empty?
 			ensure
 				@io.close_write
 			end
@@ -242,17 +241,39 @@ module Async
 			private
 			
 			def drain_write_buffer
-				Async.logger.debug(self) do
-					if @pending > 0
-						"Draining #{@pending} writes (#{@write_buffer.bytesize} bytes)..."
-					else
-						"Draining immediate write (#{@write_buffer.bytesize} bytes)..."
+				@writing.acquire do
+					Async.logger.debug(self) do
+						if @pending > 0
+							"Draining #{@pending} writes (#{@write_buffer.bytesize} bytes)..."
+						else
+							"Draining immediate write (#{@write_buffer.bytesize} bytes)..."
+						end
 					end
+					
+					# Fast path:
+					buffer = @write_buffer
+					written = @io.write_nonblock(buffer)
+					remaining = buffer.bytesize - written
+					
+					if remaining.zero?
+						@write_buffer.clear
+						return written
+					else
+						# We are now potentially blocking, so make a new write buffer:
+						@write_buffer = Buffer.new
+					end
+					
+					# Now flush the remainder of the current buffer:
+					while remaining > 0
+						# Slow path:
+						length = self.write_nonblock(buffer.byteslice(written, remaining))
+						
+						remaining -= length
+						written += length
+					end
+					
+					return written
 				end
-				
-				# Async.logger.debug(self, name: "write") {@write_buffer.inspect}
-				@io.write(@write_buffer)
-				@write_buffer.clear
 			end
 			
 			# Fills the buffer from the underlying stream.

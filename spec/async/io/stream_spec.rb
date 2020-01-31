@@ -46,6 +46,37 @@ RSpec.describe Async::IO::Stream do
 		
 		it_should_behave_like Async::IO
 		
+		describe '#drain_write_buffer' do
+			include_context Async::RSpec::Reactor
+			let(:output) {described_class.new(sockets.last)}
+			subject {described_class.new(sockets.first)}
+			
+			let(:buffer_size) {1024*6}
+			
+			it "can interleave calls to flush" do
+				tasks = 2.times.map do |i|
+					reactor.async do
+						buffer = i.to_s * buffer_size
+						128.times do
+							output.write(buffer)
+							output.flush
+						end
+					end
+				end
+				
+				reactor.async do
+					tasks.each(&:wait)
+					output.close
+				end
+				
+				Async::Task.current.sleep(1)
+				
+				while buffer = subject.read(buffer_size)
+					expect(buffer).to be == (buffer[0] * buffer_size)
+				end
+			end
+		end
+		
 		describe '#close_read' do
 			subject {described_class.new(sockets.last)}
 			
@@ -192,13 +223,13 @@ RSpec.describe Async::IO::Stream do
 		
 		describe '#flush' do
 			it "should not call write if write buffer is empty" do
-				expect(subject.io).to_not receive(:write)
+				expect(subject.io).to_not receive(:write_nonblock)
 				
 				subject.flush
 			end
 		
 			it "should flush underlying data when it exceeds block size" do
-				expect(subject.io).to receive(:write).and_call_original.once
+				expect(subject.io).to receive(:write_nonblock).and_call_original.once
 				
 				subject.block_size.times do
 					subject.write("!")
@@ -245,7 +276,7 @@ RSpec.describe Async::IO::Stream do
 		
 		describe '#write' do
 			it "should read one line" do
-				expect(subject.io).to receive(:write).and_call_original.once
+				expect(subject.io).to receive(:write_nonblock).and_call_original.once
 				
 				subject.write "Hello World\n"
 				subject.flush
