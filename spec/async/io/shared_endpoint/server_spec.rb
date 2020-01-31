@@ -56,7 +56,7 @@ RSpec.shared_examples_for Async::IO::SharedEndpoint do |container_class|
 			end
 		end
 		
-		container.stop(false)
+		container.stop
 		bound_endpoint.close
 	end
 end
