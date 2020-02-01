@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # wat.rb
 require 'async'
 require_relative '../../lib/async/io'

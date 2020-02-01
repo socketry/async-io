@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Copyright, 2018, by Thibaut Girka.
 # Copyright, 2018, by Samuel G. D. Williams. <http://www.codeotaku.com>
 # 

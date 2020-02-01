@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 
 # This is useful for specs, but I hesitate to monkey patch a core class in the library itself.
 class Addrinfo

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 
 def measure_memory(annotation = "Memory allocated")
 	GC.disable
