@@ -30,7 +30,7 @@ RSpec.describe Async::IO::Protocol::Line do
 	let(:remote) {pipe.first}
 	subject {described_class.new(Async::IO::Stream.new(pipe.last, deferred: true), "\n")}
 	
-	after(:each) {@pipe&.each(&:close)}
+	after(:each) {defined?(@pipe) && @pipe&.each(&:close)}
 	
 	context "default line ending" do
 		subject {described_class.new(nil)}
