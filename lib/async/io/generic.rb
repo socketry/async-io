@@ -29,7 +29,7 @@ module Async
 		BLOCK_SIZE = ENV.fetch('ASYNC_IO_BLOCK_SIZE', 1024*64).to_i
 		
 		# The maximum read size when appending to IO buffers. Defaults to 8MB.
-		MAXIMUM_READ_SIZE = ENV.fetch('ASYNC_IO_MAXIMUM_READ_SIZE', BLOCK_SIZE * 128 * 8).to_i
+		MAXIMUM_READ_SIZE = ENV.fetch('ASYNC_IO_MAXIMUM_READ_SIZE', BLOCK_SIZE * 128).to_i
 		
 		# Convert a Ruby ::IO object to a wrapped instance:
 		def self.try_convert(io, &block)
