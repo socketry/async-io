@@ -30,7 +30,7 @@ RSpec.describe Async::IO::Stream do
 	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
 	describe "::BLOCK_SIZE" do
 		it "should exist and be reasonable" do
-			expect(Async::IO::Stream::BLOCK_SIZE).to be_between(1024, 1024*32)
+			expect(Async::IO::Stream::BLOCK_SIZE).to be_between(1024, 1024*128)
 		end
 	end
 	
@@ -241,7 +241,9 @@ RSpec.describe Async::IO::Stream do
 		
 		describe '#read_partial' do
 			before(:each) do
-				io.write("Hello World!" * 1024)
+				string = "Hello World!"
+				
+				io.write(string * (1 + (Async::IO::BLOCK_SIZE / string.bytesize)))
 				io.seek(0)
 			end
 			
@@ -260,7 +262,7 @@ RSpec.describe Async::IO::Stream do
 				
 				it "allocates exact number of bytes being read" do
 					expect do
-						subject.read_partial(16*1024)
+						subject.read_partial(subject.block_size * 2)
 					end.to limit_allocations.of(String, count: 1, size: 0)
 				end
 				
