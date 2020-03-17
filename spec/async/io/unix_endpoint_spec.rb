@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 require 'async/io/unix_endpoint'
+require 'async/io/stream'
 
 RSpec.describe Async::IO::UNIXEndpoint do
 	include_context Async::RSpec::Reactor
@@ -76,5 +77,30 @@ RSpec.describe Async::IO::UNIXEndpoint do
 		end
 		
 		server_task.stop
+	end
+	
+	context "using buffered stream" do
+		it "can use stream to read and write data" do
+			server_task = reactor.async do |task|
+				subject.accept do |peer|
+					stream = Async::IO::Stream.new(peer)
+					stream.write(stream.read)
+					stream.close
+				end
+			end
+			
+			reactor.async do
+				subject.connect do |client|
+					stream = Async::IO::Stream.new(client)
+					
+					stream.write(data)
+					stream.close_write
+					
+					expect(stream.read).to be == data
+				end
+			end.wait
+			
+			server_task.stop
+		end
 	end
 end
