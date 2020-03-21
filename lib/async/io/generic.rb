@@ -105,6 +105,8 @@ module Async
 			#   data = io.sysread(512)
 			wrap_blocking_method :sysread, :read_nonblock
 			
+			alias readpartial read_nonblock
+			
 			# Read `length` bytes of data from the underlying I/O. If length is unspecified, read everything.
 			def read(length = nil, buffer = nil)
 				if buffer
@@ -148,8 +150,6 @@ module Async
 			# @example
 			#   io.syswrite("Hello World")
 			wrap_blocking_method :syswrite, :write_nonblock
-			
-			alias readpartial read_nonblock
 			
 			def write(buffer)
 				# Fast path:
@@ -211,9 +211,9 @@ module Async
 			
 			protected
 			
-			def async_send(*args, timeout: self.timeout)
+			def async_send(*arguments, timeout: self.timeout)
 				while true
-					result = @io.__send__(*args, exception: false)
+					result = @io.__send__(*arguments, exception: false)
 					
 					case result
 					when :wait_readable
