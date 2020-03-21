@@ -223,13 +223,13 @@ module Async
 			
 			# Returns true if the stream is at file which means there is no more data to be read.
 			def eof?
-				return false unless @read_buffer.empty?
-				
-				if !@eof
-					fill_read_buffer
+				if !@read_buffer.empty?
+					return false
+				elsif @eof
+					return true
+				else
+					return @io.eof?
 				end
-				
-				return @eof
 			end
 			
 			alias eof eof?
