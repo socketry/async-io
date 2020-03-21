@@ -43,6 +43,14 @@ module Async
 				return false
 			end
 			
+			def eof
+				!connected?
+			end
+			
+			def eof?
+				!connected?
+			end
+			
 			# Best effort to set *_NODELAY if it makes sense. Swallows errors where possible.
 			def sync=(value)
 				super
