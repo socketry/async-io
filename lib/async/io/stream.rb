@@ -48,6 +48,7 @@ module Async
 				
 				@deferred = deferred
 				@pending = 0
+				
 				@writing = Async::Semaphore.new(1)
 				
 				# We don't want Ruby to do any IO buffering.
@@ -154,7 +155,6 @@ module Async
 					if @pending == 1
 						task.yield
 						drain_write_buffer unless @write_buffer.empty?
-						@pending = 0
 					end
 				else
 					drain_write_buffer unless @write_buffer.empty?
@@ -245,18 +245,29 @@ module Async
 			
 			def drain_write_buffer
 				@writing.acquire do
-					Async.logger.debug(self) do
+					Async.logger.debug(self) do |buffer|
 						if @pending > 0
-							"Draining #{@pending} writes (#{@write_buffer.bytesize} bytes)..."
+							buffer.puts "Draining #{@pending} writes (#{@write_buffer.bytesize} bytes)..."
 						else
-							"Draining immediate write (#{@write_buffer.bytesize} bytes)..."
+							buffer.puts "Draining immediate write (#{@write_buffer.bytesize} bytes)..."
 						end
+						
+						# buffer.puts "@write_buffer = #{@write_buffer.inspect}"
+						# buffer.puts "@drain_buffer = #{@drain_buffer.inspect}"
 					end
 					
+					# Flip the write buffer and drain buffer:
 					@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
 					
-					@io.write(@drain_buffer)
-					@drain_buffer.clear
+					# The write buffer no longer contains pending writes:
+					@pending = 0
+					
+					begin
+						@io.write(@drain_buffer)
+					ensure
+						# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
+						@drain_buffer.clear
+					end
 				end
 			end
 			
@@ -281,6 +292,7 @@ module Async
 					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
 						@read_buffer << chunk
 						# Async.logger.debug(self, name: "read") {@read_buffer.inspect}
+						
 						return true
 					end
 				end
