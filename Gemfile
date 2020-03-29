@@ -8,6 +8,8 @@ gemspec
 group :development do
 	gem 'pry'
 	gem 'guard-rspec'
+	
+	gem 'bake-bundler'
 end
 
 group :test do
