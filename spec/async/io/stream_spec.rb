@@ -77,6 +77,25 @@ RSpec.describe Async::IO::Stream do
 					expect(buffer).to be == (buffer[0] * buffer_size)
 				end
 			end
+			
+			it "handles write failures" do
+				subject.close
+				
+				task = reactor.async do
+					output.write("Hello World")
+					output.flush(deferred: true)
+				end
+				
+				expect do
+					task.wait
+				end.to raise_error(Errno::EPIPE)
+				
+				write_buffer = output.instance_variable_get(:@write_buffer)
+				drain_buffer = output.instance_variable_get(:@drain_buffer)
+				
+				expect(write_buffer).to be_empty
+				expect(drain_buffer).to be_empty
+			end
 		end
 		
 		describe '#close_read' do
