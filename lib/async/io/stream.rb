@@ -150,11 +150,18 @@ module Async
 			# Flushes buffered data to the stream.
 			def flush(deferred: @deferred)
 				if deferred and task = Task.current?
+					# Despite how it looks, this field is not actually directly related to whether or not writes should occur. It's actually used to control the logic of deferred flushing. Therefore, it should NOT be modified outside this method.
 					@pending += 1
 					
 					if @pending == 1
 						task.yield
-						drain_write_buffer unless @write_buffer.empty?
+						
+						begin
+							drain_write_buffer unless @write_buffer.empty?
+						ensure
+							# The write buffer no longer contains pending writes
+							@pending = 0
+						end
 					end
 				else
 					drain_write_buffer unless @write_buffer.empty?
@@ -243,6 +250,7 @@ module Async
 			
 			private
 			
+			# For efficiency purposes, only call this method when the write buffer is not empty.
 			def drain_write_buffer
 				@writing.acquire do
 					Async.logger.debug(self) do |buffer|
@@ -258,9 +266,6 @@ module Async
 					
 					# Flip the write buffer and drain buffer:
 					@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
-					
-					# The write buffer no longer contains pending writes:
-					@pending = 0
 					
 					begin
 						@io.write(@drain_buffer)
@@ -279,9 +284,7 @@ module Async
 				end
 				
 				# This effectively ties the input and output stream together.
-				if @pending > 0
-					drain_write_buffer
-				end
+				drain_write_buffer unless @write_buffer.empty?
 				
 				if @read_buffer.empty?
 					if @io.read_nonblock(size, @read_buffer, exception: false)
