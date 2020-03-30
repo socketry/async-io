@@ -2,6 +2,8 @@ language: ruby
 dist: xenial
 cache: bundler
 
+script: bundle exec rspec
+
 matrix:
   include:
     - rvm: 2.4
