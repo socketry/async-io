@@ -20,7 +20,6 @@ matrix:
     - rvm: 2.6
       os: osx
       gemfile: gems/nio4r-2.3.gemfile
-    - rvm: 2.7
   allow_failures:
     - rvm: ruby-head
     - rvm: truffleruby
