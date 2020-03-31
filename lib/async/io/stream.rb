@@ -46,7 +46,6 @@ module Async
 				@io = io
 				@eof = false
 				
-				@deferred = deferred
 				@pending = 0
 				
 				@writing = Async::Semaphore.new(1)
@@ -148,23 +147,19 @@ module Async
 			end
 			
 			# Flushes buffered data to the stream.
-			def flush(deferred: @deferred)
-				if deferred and task = Task.current?
-					# Despite how it looks, this field is not actually directly related to whether or not writes should occur. It's actually used to control the logic of deferred flushing. Therefore, it should NOT be modified outside this method.
-					@pending += 1
+			def flush
+				return if @write_buffer.empty?
+				
+				@writing.acquire do
+					# Flip the write buffer and drain buffer:
+					@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
 					
-					if @pending == 1
-						task.yield
-						
-						begin
-							drain_write_buffer unless @write_buffer.empty?
-						ensure
-							# The write buffer no longer contains pending writes
-							@pending = 0
-						end
+					begin
+						@io.write(@drain_buffer)
+					ensure
+						# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
+						@drain_buffer.clear
 					end
-				else
-					drain_write_buffer unless @write_buffer.empty?
 				end
 			end
 			
@@ -210,7 +205,7 @@ module Async
 			end
 			
 			def close_write
-				drain_write_buffer unless @write_buffer.empty?
+				flush
 			ensure
 				@io.close_write
 			end
@@ -220,7 +215,7 @@ module Async
 				return if @io.closed?
 				
 				begin
-					drain_write_buffer unless @write_buffer.empty?
+					flush
 				rescue
 					# We really can't do anything here unless we want #close to raise exceptions.
 				ensure
@@ -250,32 +245,6 @@ module Async
 			
 			private
 			
-			# For efficiency purposes, only call this method when the write buffer is not empty.
-			def drain_write_buffer
-				@writing.acquire do
-					Async.logger.debug(self) do |buffer|
-						if @pending > 0
-							buffer.puts "Draining #{@pending} writes (#{@write_buffer.bytesize} bytes)..."
-						else
-							buffer.puts "Draining immediate write (#{@write_buffer.bytesize} bytes)..."
-						end
-						
-						# buffer.puts "@write_buffer = #{@write_buffer.inspect}"
-						# buffer.puts "@drain_buffer = #{@drain_buffer.inspect}"
-					end
-					
-					# Flip the write buffer and drain buffer:
-					@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
-					
-					begin
-						@io.write(@drain_buffer)
-					ensure
-						# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
-						@drain_buffer.clear
-					end
-				end
-			end
-			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer(size = @block_size)
 				# We impose a limit because the underlying `read` system call can fail if we request too much data in one go.
@@ -284,7 +253,7 @@ module Async
 				end
 				
 				# This effectively ties the input and output stream together.
-				drain_write_buffer unless @write_buffer.empty?
+				flush
 				
 				if @read_buffer.empty?
 					if @io.read_nonblock(size, @read_buffer, exception: false)
