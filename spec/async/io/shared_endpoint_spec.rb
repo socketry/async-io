@@ -23,8 +23,6 @@
 require 'async/io/host_endpoint'
 require 'async/io/shared_endpoint'
 
-require 'pry'
-
 RSpec.describe Async::IO::SharedEndpoint do
 	include_context Async::RSpec::Reactor
 	
