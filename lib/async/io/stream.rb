@@ -47,6 +47,8 @@ module Async
 				@eof = false
 				
 				@pending = 0
+				# This field is ignored, but used to mean, try to buffer packets in a single iteration of the reactor.
+				# @deferred = deferred
 				
 				@writing = Async::Semaphore.new(1)
 				

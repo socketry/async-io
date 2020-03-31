@@ -83,7 +83,7 @@ RSpec.describe Async::IO::Stream do
 				
 				task = reactor.async do
 					output.write("Hello World")
-					output.flush(deferred: true)
+					output.flush
 				end
 				
 				expect do
