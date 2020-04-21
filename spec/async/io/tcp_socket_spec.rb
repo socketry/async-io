@@ -24,7 +24,7 @@ require 'async/io/tcp_socket'
 
 require_relative 'generic_examples'
 
-RSpec.describe Async::IO::TCPSocket, timeout: 1 do
+RSpec.describe Async::IO::TCPSocket do
 	include_context Async::RSpec::Reactor
 	
 	it_should_behave_like Async::IO::Generic
