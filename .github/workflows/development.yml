@@ -51,4 +51,5 @@ jobs:
       run: ${{matrix.env}} bundle install
     
     - name: Run tests
+      timeout-minutes: 5
       run: ${{matrix.env}} bundle exec rspec
