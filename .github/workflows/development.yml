@@ -22,23 +22,23 @@ jobs:
         env: [""]
         
         include:
-          - experimental: true
-            os: ubuntu
+          - os: ubuntu
             ruby: truffleruby
+            experimental: true
             env: JRUBY_OPTS="--debug -X+O"
-          - experimental: true
-            os: ubuntu
+          - os: ubuntu
             ruby: jruby
-          - experimental: true
-            os: ubuntu
+            experimental: true
+          - os: ubuntu
             ruby: head
-          - experimental: false
-            os: ubuntu
+            experimental: true
+          - os: ubuntu
             ruby: 2.6
+            experimental: false
             env: COVERAGE=PartialSummary,Coveralls
-          - experimental: false
-            os: macos
+          - os: macos
             ruby: 2.7
+            experimental: false
             env: BUNDLE_GEMFILE=gems/nio4r-2.3.gemfile
     
     steps:
