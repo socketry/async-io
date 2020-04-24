@@ -77,7 +77,7 @@ module Async
 			# @yield [Socket] the bound socket
 			# @return [Array<Socket>] an array of bound sockets
 			def bind(&block)
-				Addrinfo.foreach(*@specification).collect do |address|
+				Addrinfo.foreach(*@specification).map do |address|
 					Socket.bind(address, **@options, &block)
 				end
 			end
