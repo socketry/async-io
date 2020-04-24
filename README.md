@@ -65,7 +65,7 @@ Async do
 
   server = echo_server(endpoint)
 
-  5.times.collect do |i|
+  5.times.map do |i|
     echo_client(endpoint, "Hello World #{i}")
   end.each(&:wait)
 

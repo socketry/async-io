@@ -116,7 +116,7 @@ RSpec.describe "c10k echo client/server", if: Process.respond_to?(:fork) do
 			Async do |task|
 				responses = []
 				
-				tasks = repeats.times.collect do |i|
+				tasks = repeats.times.map do |i|
 					# puts "Starting client #{i} on #{task}..." if (i % 1000) == 0
 					
 					echo_client(server_address, "Hello World #{i}", responses)

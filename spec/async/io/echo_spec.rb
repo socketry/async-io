@@ -61,7 +61,7 @@ RSpec.describe "echo client/server" do
 		server = echo_server(server_address)
 		responses = []
 		
-		tasks = repeats.times.collect do |i|
+		tasks = repeats.times.map do |i|
 			echo_client(server_address, "Hello World #{i}", responses)
 		end
 		
