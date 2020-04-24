@@ -18,11 +18,11 @@ gem 'async-io'
 
 And then execute:
 
-	$ bundle
+    $ bundle
 
 Or install it yourself as:
 
-	$ gem install async-io
+    $ gem install async-io
 
 ## Usage
 
@@ -32,44 +32,44 @@ Basic echo server (from `spec/async/io/echo_spec.rb`):
 require 'async/io'
 
 def echo_server(endpoint)
-	Async do |task|
-		# This is a synchronous block within the current task:
-		endpoint.accept do |client|
-			# This is an asynchronous block within the current reactor:
-			data = client.read
-			
-			# This produces out-of-order responses.
-			task.sleep(rand * 0.01)
-			
-			client.write(data.reverse)
-			client.close_write
-		end
-	end
+  Async do |task|
+    # This is a synchronous block within the current task:
+    endpoint.accept do |client|
+      # This is an asynchronous block within the current reactor:
+      data = client.read
+
+      # This produces out-of-order responses.
+      task.sleep(rand * 0.01)
+
+      client.write(data.reverse)
+      client.close_write
+    end
+  end
 end
 
 def echo_client(endpoint, data)
-	Async do |task|
-		endpoint.connect do |peer|
-			peer.write(data)
-			peer.close_write
-			
-			message = peer.read
-			
-			puts "Sent #{data}, got response: #{message}"
-		end
-	end
+  Async do |task|
+    endpoint.connect do |peer|
+      peer.write(data)
+      peer.close_write
+
+      message = peer.read
+
+      puts "Sent #{data}, got response: #{message}"
+    end
+  end
 end
 
 Async do
-	endpoint = Async::IO::Endpoint.tcp('0.0.0.0', 9000)
-	
-	server = echo_server(endpoint)
-	
-	5.times.collect do |i|
-		echo_client(endpoint, "Hello World #{i}")
-	end.each(&:wait)
-	
-	server.stop
+  endpoint = Async::IO::Endpoint.tcp('0.0.0.0', 9000)
+
+  server = echo_server(endpoint)
+
+  5.times.collect do |i|
+    echo_client(endpoint, "Hello World #{i}")
+  end.each(&:wait)
+
+  server.stop
 end
 ```
 
@@ -79,11 +79,11 @@ Timeouts add a temporal limit to the execution of your code. If the IO doesn't r
 
 ```ruby
 message = task.with_timeout(5) do
-	begin
-		peer.read
-	rescue Async::TimeoutError
-		nil # The timeout was triggered.
-	end
+  begin
+    peer.read
+  rescue Async::TimeoutError
+    nil # The timeout was triggered.
+  end
 end
 ```
 
@@ -113,13 +113,13 @@ $stdin.raw!
 $stdin.echo = false
 
 Async do |task|
-	stdin = Async::IO::Stream.new(
-		Async::IO::Generic.new($stdin)
-	)
-	
-	while character = stdin.read(1)
-		$stdout.write character.upcase
-	end
+  stdin = Async::IO::Stream.new(
+    Async::IO::Generic.new($stdin)
+  )
+
+  while character = stdin.read(1)
+    $stdout.write character.upcase
+  end
 end
 ```
 
