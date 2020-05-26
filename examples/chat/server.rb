@@ -4,6 +4,7 @@
 $LOAD_PATH << File.expand_path("../../lib", __dir__)
 
 require 'set'
+require 'logger'
 
 require 'async'
 require 'async/io/host_endpoint'

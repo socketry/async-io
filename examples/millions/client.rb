@@ -13,7 +13,7 @@ endpoint = Async::IO::Endpoint.parse(ARGV.pop || "tcp://localhost:7234")
 
 CONNECTIONS = 1_000_000
 
-CONCURRENCY = Async::Container.hardware_concurrency
+CONCURRENCY = Async::Container.processor_count
 TASKS = 16
 REPEATS = (CONNECTIONS.to_f / (TASKS * CONCURRENCY)).ceil
 
