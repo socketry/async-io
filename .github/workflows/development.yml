@@ -42,7 +42,7 @@ jobs:
             env: BUNDLE_GEMFILE=gems/nio4r-2.3.gemfile
     
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{matrix.ruby}}
