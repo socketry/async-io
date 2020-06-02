@@ -49,4 +49,12 @@ RSpec.describe Async::IO::Trap do
 		
 		expect(trapped).to be_truthy
 	end
+	
+	it "should create transient task" do
+		task = subject.async(transient: true) do
+			# Trapped.
+		end
+		
+		expect(task).to be_transient
+	end
 end

@@ -87,9 +87,10 @@ module Async
 			# Deprecated.
 			alias trap wait
 			
-			def async(parent: Task.current, &block)
-				parent.async do |task|
-					self.trap(task: task, &block)
+			# In order to avoid blocking the reactor, specify `transient: true` as an option.
+			def async(parent: Task.current, **options, &block)
+				parent.async(**options) do |task|
+					self.wait(task: task, &block)
 				end
 			end
 			

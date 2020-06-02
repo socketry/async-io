@@ -13,3 +13,5 @@ RSpec.configure do |config|
 		c.syntax = :expect
 	end
 end
+
+Signal.trap(:INT) { raise Interrupt }
