@@ -36,6 +36,10 @@ module Async
 				@mutex = Mutex.new
 			end
 			
+			def to_s
+				"\#<#{self.class} #{@name}>"
+			end
+			
 			# Ignore the trap within the current process. Can be invoked before forking and/or invoking `install!` to assert default behaviour.
 			def ignore!
 				Signal.trap(@name, :IGNORE)
