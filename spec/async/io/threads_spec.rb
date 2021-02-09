@@ -40,17 +40,21 @@ RSpec.describe Async::IO::Threads do
 			
 			thread = nil
 			
-			task = Async do
-				subject.async do
-					thread = Thread.current
-					sleeping.signal
-					sleep
-				end
+			task = subject.async do
+				thread = Thread.current
+				sleeping.signal
+				sleep
 			end
 			
 			sleeping.wait
 			
 			task.stop
+			10.times do
+				pp thread
+				sleep(0.1)
+				break unless thread.status
+			end
+			
 			expect(thread.status).to be_nil
 		ensure
 			sleeping.close

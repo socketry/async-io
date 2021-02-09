@@ -29,24 +29,18 @@ module Async
 				@parent = parent
 			end
 			
-			def async(parent: (@parent or Task.current))
-				parent.async do |task|
-					notification = Async::IO::Notification.new
-					
-					thread = Thread.new do
-						yield
-					ensure
-						notification.signal
-					end
-					
-					task.annotate "Waiting for thread to finish..."
-					
-					notification.wait
-					
-					thread.value
-				ensure
-					if thread&.alive?
-						thread.raise(Stop)
+			if Async::Scheduler.supported?
+				def async(parent: (@parent or Task.current))
+					parent.async do
+						thread = ::Thread.new do
+							yield
+						end
+						
+						thread.join
+					rescue Stop
+						if thread&.alive?
+							thread.raise(Stop)
+						end
 						
 						begin
 							thread.join
@@ -54,8 +48,36 @@ module Async
 							# Ignore.
 						end
 					end
-					
-					notification&.close
+				end
+			else
+				def async(parent: (@parent or Task.current))
+					parent.async do |task|
+						notification = Async::IO::Notification.new
+						
+						thread = ::Thread.new do
+							yield
+						ensure
+							notification.signal
+						end
+						
+						task.annotate "Waiting for thread to finish..."
+						
+						notification.wait
+						
+						thread.value
+					ensure
+						if thread&.alive?
+							thread.raise(Stop)
+							
+							begin
+								thread.join
+							rescue Stop
+								# Ignore.
+							end
+						end
+						
+						notification&.close
+					end
 				end
 			end
 		end
