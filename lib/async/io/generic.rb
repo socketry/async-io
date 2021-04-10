@@ -84,71 +84,75 @@ module Async
 			
 			wraps ::IO, :external_encoding, :internal_encoding, :autoclose?, :autoclose=, :pid, :stat, :binmode, :flush, :set_encoding, :set_encoding_by_bom, :to_path, :to_io, :to_i, :reopen, :fileno, :fsync, :fdatasync, :sync, :sync=, :tell, :seek, :rewind, :path, :pos, :pos=, :eof, :eof?, :close_on_exec?, :close_on_exec=, :closed?, :close_read, :close_write, :isatty, :tty?, :binmode?, :sysseek, :advise, :ioctl, :fcntl, :nread, :ready?, :pread, :pwrite, :pathconf
 			
-			# Read the specified number of bytes from the input stream. This is fast path.
-			# @example
-			#   data = io.sysread(512)
-			wrap_blocking_method :sysread, :read_nonblock
-			
-			alias readpartial read_nonblock
-			
-			# Read `length` bytes of data from the underlying I/O. If length is unspecified, read everything.
-			def read(length = nil, buffer = nil)
-				if buffer
-					buffer.clear
-				else
-					buffer = String.new
-				end
+			if Async::Scheduler.supported?
+				def_delegators :@io, :read, :write, :sysread, :syswrite, :read_nonblock, :write_nonblock, :readpartial
+			else
+				# Read the specified number of bytes from the input stream. This is fast path.
+				# @example
+				#   data = io.sysread(512)
+				wrap_blocking_method :sysread, :read_nonblock
 				
-				if length
-					return String.new(encoding: Encoding::BINARY) if length <= 0
+				alias readpartial read_nonblock
+				
+				# Read `length` bytes of data from the underlying I/O. If length is unspecified, read everything.
+				def read(length = nil, buffer = nil)
+					if buffer
+						buffer.clear
+					else
+						buffer = String.new
+					end
 					
-					# Fast path:
-					if buffer = self.sysread(length, buffer)
+					if length
+						return "" if length <= 0
 						
-						# Slow path:
-						while buffer.bytesize < length
+						# Fast path:
+						if buffer = self.sysread(length, buffer)
+							
 							# Slow path:
-							if chunk = self.sysread(length - buffer.bytesize)
-								buffer << chunk
-							else
-								break
+							while buffer.bytesize < length
+								# Slow path:
+								if chunk = self.sysread(length - buffer.bytesize)
+									buffer << chunk
+								else
+									break
+								end
 							end
+							
+							return buffer
+						else
+							return nil
+						end
+					else
+						buffer = self.sysread(BLOCK_SIZE, buffer)
+						
+						while chunk = self.sysread(BLOCK_SIZE)
+							buffer << chunk
 						end
 						
 						return buffer
-					else
-						return nil
 					end
-				else
-					buffer = self.sysread(BLOCK_SIZE, buffer)
-					
-					while chunk = self.sysread(BLOCK_SIZE)
-						buffer << chunk
-					end
-					
-					return buffer
-				end
-			end
-			
-			# Write entire buffer to output stream. This is fast path.
-			# @example
-			#   io.syswrite("Hello World")
-			wrap_blocking_method :syswrite, :write_nonblock
-			
-			def write(buffer)
-				# Fast path:
-				written = self.syswrite(buffer)
-				remaining = buffer.bytesize - written
-				
-				while remaining > 0
-					# Slow path:
-					length = self.syswrite(buffer.byteslice(written, remaining))
-					
-					remaining -= length
-					written += length
 				end
 				
-				return written
+				# Write entire buffer to output stream. This is fast path.
+				# @example
+				#   io.syswrite("Hello World")
+				wrap_blocking_method :syswrite, :write_nonblock
+				
+				def write(buffer)
+					# Fast path:
+					written = self.syswrite(buffer)
+					remaining = buffer.bytesize - written
+					
+					while remaining > 0
+						# Slow path:
+						length = self.syswrite(buffer.byteslice(written, remaining))
+						
+						remaining -= length
+						written += length
+					end
+					
+					return written
+				end
 			end
 			
 			def << buffer

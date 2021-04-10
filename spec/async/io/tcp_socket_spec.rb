@@ -14,7 +14,7 @@ RSpec.describe Async::IO::TCPSocket do
 	
 	# Shared port for localhost network tests.
 	let(:server_address) {Async::IO::Address.tcp("localhost", 6788)}
-	let(:data) {"The quick brown fox jumped over the lazy dog."}
+	let(:data) {"The quick brown fox jumped over the lazy dog.\n"}
 	
 	describe Async::IO::TCPServer do
 		it_should_behave_like Async::IO::Generic

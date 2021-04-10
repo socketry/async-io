@@ -234,6 +234,20 @@ module Async
 			
 			private
 			
+			def sysread(size, buffer)
+				while true
+					result = @io.read_nonblock(size, buffer, exception: false)
+					
+					if result == :wait_readable
+						@io.wait_readable
+					elsif result == :wait_writable
+						@io.wait_writable
+					else
+						return result
+					end
+				end
+			end
+			
 			# Fills the buffer from the underlying stream.
 			def fill_read_buffer(size = @block_size)
 				# We impose a limit because the underlying `read` system call can fail if we request too much data in one go.
@@ -245,12 +259,12 @@ module Async
 				flush
 				
 				if @read_buffer.empty?
-					if @io.read_nonblock(size, @read_buffer, exception: false)
+					if sysread(size, @read_buffer)
 						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						return true
 					end
 				else
-					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
+					if chunk = sysread(size, @input_buffer)
 						@read_buffer << chunk
 						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						
@@ -258,6 +272,10 @@ module Async
 					end
 				end
 				
+				@eof = true
+				return false
+			
+			rescue EOFError
 				# else for both cases above:
 				@eof = true
 				return false

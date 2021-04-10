@@ -1,4 +1,4 @@
-name: Async v1
+name: Async v2
 
 on: [push, pull_request]
 
@@ -12,10 +12,10 @@ jobs:
           - ubuntu
         
         ruby:
-          - "2.7"
+          - "3.1.1"
     
     env:
-      BUNDLE_GEMFILE: gems/async-v1.rb
+      BUNDLE_GEMFILE: gems/async-v2.rb
     
     steps:
     - uses: actions/checkout@v2
