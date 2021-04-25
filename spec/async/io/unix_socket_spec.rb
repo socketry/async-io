@@ -49,14 +49,12 @@ RSpec.describe Async::IO::UNIXSocket do
 			end
 		end
 		
-		reactor.async do
-			Async::IO::UNIXSocket.wrap(path) do |client|
-				client.send(data)
-				
-				response = client.recv(512)
-				
-				expect(response).to be == data
-			end
+		Async::IO::UNIXSocket.wrap(path) do |client|
+			client.send(data)
+			
+			response = client.recv(512)
+			
+			expect(response).to be == data
 		end
 	end
 end

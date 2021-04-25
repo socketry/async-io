@@ -22,6 +22,7 @@
 
 require 'async/io/unix_endpoint'
 require 'async/io/stream'
+require 'fileutils'
 
 RSpec.describe Async::IO::UNIXEndpoint do
 	include_context Async::RSpec::Reactor
@@ -45,15 +46,13 @@ RSpec.describe Async::IO::UNIXEndpoint do
 			end
 		end
 		
-		reactor.async do
-			subject.connect do |client|
-				client.send(data)
-				
-				response = client.recv(512)
-				
-				expect(response).to be == data
-			end
-		end.wait
+		subject.connect do |client|
+			client.send(data)
+			
+			response = client.recv(512)
+			
+			expect(response).to be == data
+		end
 		
 		server_task.stop
 	end

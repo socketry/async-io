@@ -41,24 +41,20 @@ RSpec.describe Async::IO::Socket do
 	
 	describe 'basic udp server' do
 		it "should echo data back to peer" do
-			reactor.async do
-				Async::IO::Socket.connect(server_address) do |client|
-					client.send(data)
-					response = client.recv(512)
-					
-					expect(response).to be == data
-				end
+			Async::IO::Socket.connect(server_address) do |client|
+				client.send(data)
+				response = client.recv(512)
+				
+				expect(response).to be == data
 			end
 		end
 		
 		it "should use unconnected socket" do
-			reactor.async do
-				Async::IO::UDPSocket.wrap(server_address.afamily) do |client|
-					client.send(data, 0, server_address)
-					response, address = client.recvfrom(512)
-					
-					expect(response).to be == data
-				end
+			Async::IO::UDPSocket.wrap(server_address.afamily) do |client|
+				client.send(data, 0, server_address)
+				response, address = client.recvfrom(512)
+				
+				expect(response).to be == data
 			end
 		end
 	end

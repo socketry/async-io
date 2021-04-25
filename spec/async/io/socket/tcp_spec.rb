@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 require 'async/io/tcp_socket'
+require 'async/io/address'
 
 RSpec.describe Async::IO::Socket do
 	include_context Async::RSpec::Reactor
@@ -32,70 +33,60 @@ RSpec.describe Async::IO::Socket do
 	
 	let!(:server_task) do
 		# Accept a single incoming connection and then finish.
-		reactor.async do |task|
-			Async::IO::Socket.bind(server_address) do |server|
-				server.listen(10)
-				
-				server.accept do |peer, address|
-					data = peer.read(512)
-					peer.write(data)
-				end
+		Async::IO::Socket.bind(server_address) do |server|
+			server.listen(10)
+			
+			server.accept do |peer, address|
+				data = peer.read(512)
+				peer.write(data)
 			end
 		end
 	end
 	
 	describe 'basic tcp server' do
 		it "should start server and send data" do
-			reactor.async do
-				Async::IO::Socket.connect(server_address) do |client|
-					client.write(data)
-					client.close_write
-					
-					expect(client.read(512)).to be == data
-				end
+			Async::IO::Socket.connect(server_address) do |client|
+				client.write(data)
+				client.close_write
+				
+				expect(client.read(512)).to be == data
 			end
 		end
 	end
 	
 	describe 'non-blocking tcp connect' do
 		it "can specify local address" do
-			reactor.async do |task|
-				Async::IO::Socket.connect(server_address, local_address: local_address) do |client|
-					client.write(data)
-					client.close_write
-					
-					expect(client.read(512)).to be == data
-				end
+			Async::IO::Socket.connect(server_address, local_address: local_address) do |client|
+				client.write(data)
+				client.close_write
+				
+				expect(client.read(512)).to be == data
 			end
 		end
 		
 		it "should start server and send data" do
-			reactor.async do |task|
-				Async::IO::Socket.connect(server_address) do |client|
-					client.write(data)
-					client.close_write
-					
-					expect(client.read(512)).to be == data
-				end
+			Async::IO::Socket.connect(server_address) do |client|
+				client.write(data)
+				client.close_write
+				
+				expect(client.read(512)).to be == data
 			end
 		end
 		
 		it "can connect socket and read/write in a different task" do
-			reactor.async do |task|
-				socket = Async::IO::Socket.connect(server_address)
+			socket = Async::IO::Socket.connect(server_address)
+			
+			expect(socket).to_not be_nil
+			expect(socket).to be_kind_of Async::Wrapper
+			
+			reactor.async do
+				socket.write(data)
+				socket.close_write
 				
-				expect(socket).to_not be_nil
-				expect(socket).to be_kind_of Async::Wrapper
-				
-				reactor.async do
-					socket.write(data)
-					socket.close_write
-					
-					expect(socket.read(512)).to be == data
-				end.wait
-				
-				socket.close
-			end
+				expect(socket.read(512)).to be == data
+			end.wait
+			
+			socket.close
 		end
 	end
 end
