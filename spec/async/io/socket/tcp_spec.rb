@@ -92,9 +92,9 @@ RSpec.describe Async::IO::Socket do
 					socket.close_write
 					
 					expect(socket.read(512)).to be == data
-					
-					socket.close
-				end
+				end.wait
+				
+				socket.close
 			end
 		end
 	end

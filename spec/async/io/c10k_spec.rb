@@ -59,7 +59,7 @@ RSpec.describe "c10k echo client/server", if: Process.respond_to?(:fork) do
 				end
 			end.wait
 			
-			puts "Releasing #{connections.size} connections..."
+			Console.logger.info("Releasing #{connections.size} connections...")
 			
 			while connection = connections.pop
 				connection.write(".")
@@ -75,7 +75,7 @@ RSpec.describe "c10k echo client/server", if: Process.respond_to?(:fork) do
 					responses << peer.read(1)
 				end
 			rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EADDRINUSE
-				puts "#{data}: #{$!}..."
+				Console.logger.warn(data, $!)
 				# If the connection was refused, it means the server probably can't accept connections any faster than it currently is, so we simply retry.
 				retry
 			end
