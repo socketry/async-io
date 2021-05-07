@@ -76,8 +76,8 @@ class Server
 	end
 end
 
-Async.logger.level = Logger::INFO
-Async.logger.info("Starting server...")
+Console.logger.level = Logger::INFO
+Console.logger.info("Starting server...")
 server = Server.new
 
 endpoint = Async::IO::Endpoint.parse(ARGV.pop || "tcp://localhost:7138")

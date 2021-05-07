@@ -259,13 +259,13 @@ module Async
 				
 				if @read_buffer.empty?
 					if @io.read_nonblock(size, @read_buffer, exception: false)
-						# Async.logger.debug(self, name: "read") {@read_buffer.inspect}
+						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						return true
 					end
 				else
 					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
 						@read_buffer << chunk
-						# Async.logger.debug(self, name: "read") {@read_buffer.inspect}
+						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						
 						return true
 					end

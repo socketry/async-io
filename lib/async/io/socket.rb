@@ -116,7 +116,7 @@ module Async
 			# @param remote_address [Address] The remote address to connect to.
 			# @option local_address [Address] The local address to bind to before connecting.
 			def self.connect(remote_address, local_address: nil, task: Task.current, **options)
-				Async.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
+				Console.logger.debug(self) {"Connecting to #{remote_address.inspect}"}
 				
 				task.annotate "connecting to #{remote_address.inspect}"
 				
@@ -154,7 +154,7 @@ module Async
 			# @param local_address [Address] The local address to bind to.
 			# @option protocol [Integer] The socket protocol to use.
 			def self.bind(local_address, protocol: 0, task: Task.current, **options, &block)
-				Async.logger.debug(self) {"Binding to #{local_address.inspect}"}
+				Console.logger.debug(self) {"Binding to #{local_address.inspect}"}
 				
 				wrapper = build(local_address.afamily, local_address.socktype, protocol, **options) do |socket|
 					socket.bind(local_address.to_sockaddr)

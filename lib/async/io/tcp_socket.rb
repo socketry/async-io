@@ -40,7 +40,7 @@ module Async
 					# We do this unusual dance to avoid leaking an "open" socket instance.
 					socket = Socket.connect(remote_address, local_address: local_address)
 					fd = socket.fcntl(Fcntl::F_DUPFD)
-					Async.logger.debug(self) {"Connected to #{remote_address.inspect}: #{fd}"}
+					Console.logger.debug(self) {"Connected to #{remote_address.inspect}: #{fd}"}
 					socket.close
 					
 					super(::TCPSocket.for_fd(fd))

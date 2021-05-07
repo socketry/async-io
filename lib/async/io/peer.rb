@@ -59,13 +59,13 @@ module Async
 				when 0, IPPROTO_TCP
 					self.setsockopt(IPPROTO_TCP, TCP_NODELAY, value ? 1 : 0)
 				else
-					Async.logger.warn(self) {"Unsure how to sync=#{value} for #{self.protocol}!"}
+					Console.logger.warn(self) {"Unsure how to sync=#{value} for #{self.protocol}!"}
 				end
 			rescue Errno::EINVAL
 				# On Darwin, sometimes occurs when the connection is not yet fully formed. Empirically, TCP_NODELAY is enabled despite this result.
 			rescue Errno::EOPNOTSUPP
 				# Some platforms may simply not support the operation.
-				# Async.logger.warn(self) {"Unable to set sync=#{value}!"}
+				# Console.logger.warn(self) {"Unable to set sync=#{value}!"}
 			end
 			
 			def sync
