@@ -37,10 +37,6 @@ jobs:
             ruby: 2.6
             experimental: false
             env: COVERAGE=PartialSummary,Coveralls
-          - os: macos
-            ruby: 2.7
-            experimental: false
-            env: BUNDLE_GEMFILE=gems/nio4r-2.3.gemfile
     
     steps:
     - uses: actions/checkout@v2

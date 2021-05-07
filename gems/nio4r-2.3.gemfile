@@ -1,3 +1,0 @@
-eval_gemfile("../gems.rb")
-
-gem "nio4r", "~> 2.3.0"
