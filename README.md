@@ -1,18 +1,14 @@
 # Async::IO
 
-Async::IO provides builds on [async] and provides asynchronous wrappers for `IO`, `Socket`, and related classes.
+Async::IO provides builds on [async](https://github.com/socketry/async) and provides asynchronous wrappers for `IO`, `Socket`, and related classes.
 
-[async]: https://github.com/socketry/async
-
-[![Actions Status](https://github.com/socketry/async-io/workflows/Development/badge.svg)](https://github.com/socketry/async-io/actions?workflow=Development)
-[![Code Climate](https://codeclimate.com/github/socketry/async-io.svg)](https://codeclimate.com/github/socketry/async-io)
-[![Coverage Status](https://coveralls.io/repos/socketry/async-io/badge.svg)](https://coveralls.io/r/socketry/async-io)
+[![Development Status](https://github.com/socketry/async-io/workflows/Development/badge.svg)](https://github.com/socketry/async-io/actions?workflow=Development)
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-```ruby
+``` ruby
 gem 'async-io'
 ```
 
@@ -28,7 +24,7 @@ Or install it yourself as:
 
 Basic echo server (from `spec/async/io/echo_spec.rb`):
 
-```ruby
+``` ruby
 require 'async/io'
 
 def echo_server(endpoint)
@@ -77,7 +73,7 @@ end
 
 Timeouts add a temporal limit to the execution of your code. If the IO doesn't respond in time, it will fail. Timeouts are high level concerns and you generally shouldn't use them except at the very highest level of your program.
 
-```ruby
+``` ruby
 message = task.with_timeout(5) do
   begin
     peer.read
@@ -93,7 +89,7 @@ Any `yield` operation can cause a timeout to trigger. Non-`async` functions migh
 
 Asynchronous operations may block forever. You can assign a per-wrapper operation timeout duration. All asynchronous operations will be bounded by this timeout.
 
-```ruby
+``` ruby
 peer.timeout = 1
 peer.read # If this takes more than 1 second, Async::TimeoutError will be raised.
 ```
@@ -104,7 +100,7 @@ The benefit of this approach is that it applies to all operations. Typically, th
 
 This example shows how to read one character at a time as the user presses it on the keyboard, and echos it back out as uppercase:
 
-```ruby
+``` ruby
 require 'async'
 require 'async/io/stream'
 require 'io/console'
@@ -131,20 +127,20 @@ Servers typically only deal with one request per iteartion of the reactor so it'
 
 ## Contributing
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+1.  Fork it
+2.  Create your feature branch (`git checkout -b my-new-feature`)
+3.  Commit your changes (`git commit -am 'Add some feature'`)
+4.  Push to the branch (`git push origin my-new-feature`)
+5.  Create new Pull Request
 
 ## See Also
 
-- [async](https://github.com/socketry/async) — Asynchronous event-driven reactor.
-- [async-process](https://github.com/socketry/async-process) — Asynchronous process spawning/waiting.
-- [async-websocket](https://github.com/socketry/async-websocket) — Asynchronous client and server websockets.
-- [async-dns](https://github.com/socketry/async-dns) — Asynchronous DNS resolver and server.
-- [async-rspec](https://github.com/socketry/async-rspec) — Shared contexts for running async specs.
-- [rubydns](https://github.com/ioquatix/rubydns) — A easy to use Ruby DNS server.
+  - [async](https://github.com/socketry/async) — Asynchronous event-driven reactor.
+  - [async-process](https://github.com/socketry/async-process) — Asynchronous process spawning/waiting.
+  - [async-websocket](https://github.com/socketry/async-websocket) — Asynchronous client and server websockets.
+  - [async-dns](https://github.com/socketry/async-dns) — Asynchronous DNS resolver and server.
+  - [async-rspec](https://github.com/socketry/async-rspec) — Shared contexts for running async specs.
+  - [rubydns](https://github.com/ioquatix/rubydns) — A easy to use Ruby DNS server.
 
 ## License
 
