@@ -24,6 +24,8 @@ require 'async/io/ssl_socket'
 require 'async/io/ssl_endpoint'
 
 require 'async/rspec/ssl'
+require 'async/queue'
+
 require_relative 'generic_examples'
 
 RSpec.describe Async::IO::SSLServer do
@@ -44,10 +46,14 @@ RSpec.describe Async::IO::SSLServer do
 		end
 		
 		it 'can accept_each connections' do
+			ready = Async::Queue.new
+			
 			# Accept a single incoming connection and then finish.
 			server_task = reactor.async do |task|
 				server_endpoint.bind do |server|
 					server.listen(10)
+					
+					ready.enqueue(true)
 					
 					server.accept_each do |peer, address|
 						data = peer.read(512)
@@ -56,7 +62,9 @@ RSpec.describe Async::IO::SSLServer do
 				end
 			end
 			
-			reactor.async do
+			reactor.async do |task|
+				ready.dequeue
+				
 				client_endpoint.connect do |client|
 					client.write(data)
 					client.close_write
@@ -82,10 +90,14 @@ RSpec.describe Async::IO::SSLServer do
 		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
 		
 		it 'can select correct host' do
+			ready = Async::Queue.new
+			
 			# Accept a single incoming connection and then finish.
 			server_task = reactor.async do |task|
 				server_endpoint.bind do |server|
 					server.listen(10)
+					
+					ready.enqueue(true)
 					
 					server.accept_each do |peer, address|
 						expect(peer.hostname).to be == 'example.com'
@@ -97,6 +109,8 @@ RSpec.describe Async::IO::SSLServer do
 			end
 			
 			reactor.async do
+				ready.dequeue
+				
 				valid_client_endpoint.connect do |client|
 					client.write(data)
 					client.close_write
@@ -109,10 +123,14 @@ RSpec.describe Async::IO::SSLServer do
 		end
 		
 		it 'it fails with invalid host' do
+			ready = Async::Queue.new
+			
 			# Accept a single incoming connection and then finish.
 			server_task = reactor.async do |task|
 				server_endpoint.bind do |server|
 					server.listen(10)
+					
+					ready.enqueue(true)
 					
 					server.accept_each do |peer, address|
 						peer.close
@@ -121,6 +139,8 @@ RSpec.describe Async::IO::SSLServer do
 			end
 			
 			reactor.async do
+				ready.dequeue
+				
 				expect do
 					invalid_client_endpoint.connect do |client|
 					end
