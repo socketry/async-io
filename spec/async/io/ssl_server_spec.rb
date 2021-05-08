@@ -89,6 +89,10 @@ RSpec.describe Async::IO::SSLServer do
 		
 		let(:data) {"What one programmer can do in one month, two programmers can do in two months."}
 		
+		before do
+			certificates
+		end
+		
 		it 'can select correct host' do
 			ready = Async::Queue.new
 			
