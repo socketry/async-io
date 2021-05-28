@@ -27,10 +27,10 @@ module Async
 		# Pre-connect and pre-bind sockets so that it can be used between processes.
 		class SharedEndpoint < Endpoint
 			# Create a new `SharedEndpoint` by binding to the given endpoint.
-			def self.bound(endpoint, backlog = Socket::SOMAXCONN)
+			def self.bound(endpoint, backlog: Socket::SOMAXCONN, close_on_exec: false)
 				wrappers = endpoint.bound do |server|
 					server.listen(backlog)
-					server.close_on_exec = false
+					server.close_on_exec = close_on_exec
 					server.reactor = nil
 				end
 				
@@ -38,10 +38,10 @@ module Async
 			end
 			
 			# Create a new `SharedEndpoint` by connecting to the given endpoint.
-			def self.connected(endpoint)
+			def self.connected(endpoint, close_on_exec: false)
 				wrapper = endpoint.connect
 				
-				wrapper.close_on_exec = false
+				wrapper.close_on_exec = close_on_exec
 				wrapper.reactor = nil
 				
 				return self.new(endpoint, [wrapper])
