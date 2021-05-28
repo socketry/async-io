@@ -36,6 +36,17 @@ RSpec.describe Async::IO::SharedEndpoint do
 			wrapper = bound_endpoint.wrappers.first
 			expect(wrapper).to be_a Async::IO::Socket
 			expect(wrapper.timeout).to be == endpoint.timeout
+			expect(wrapper).to_not be_close_on_exec
+			
+			bound_endpoint.close
+		end
+		
+		it "can specify close_on_exec" do
+			bound_endpoint = described_class.bound(endpoint, close_on_exec: true)
+			expect(bound_endpoint.wrappers).to_not be_empty
+			
+			wrapper = bound_endpoint.wrappers.first
+			expect(wrapper).to be_close_on_exec
 			
 			bound_endpoint.close
 		end
@@ -57,6 +68,7 @@ RSpec.describe Async::IO::SharedEndpoint do
 			wrapper = connected_endpoint.wrappers.first
 			expect(wrapper).to be_a Async::IO::Socket
 			expect(wrapper.timeout).to be == endpoint.timeout
+			expect(wrapper).to_not be_close_on_exec
 			
 			connected_endpoint.close
 			server_task.stop
