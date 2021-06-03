@@ -258,12 +258,12 @@ module Async
 				flush
 				
 				if @read_buffer.empty?
-					if @io.read_nonblock(size, @read_buffer, exception: false)
+					if @io.sysread(size, @read_buffer)
 						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						return true
 					end
 				else
-					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
+					if chunk = @io.sysread(size, @input_buffer)
 						@read_buffer << chunk
 						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						
@@ -271,6 +271,7 @@ module Async
 					end
 				end
 				
+			rescue EOFError
 				# else for both cases above:
 				@eof = true
 				return false
