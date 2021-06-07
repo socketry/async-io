@@ -66,8 +66,8 @@ module Async
 				
 				return wrapper, address unless block_given?
 				
-				task.async do |task|
-					task.annotate "incoming connection #{address.inspect} [fd=#{wrapper.fileno}]"
+				task.async do |t|
+					t.annotate "incoming connection #{address.inspect} [fd=#{wrapper.fileno}]"
 					
 					begin
 						yield wrapper, address
@@ -162,8 +162,8 @@ module Async
 				
 				return wrapper unless block_given?
 				
-				task.async do |task|
-					task.annotate "binding to #{wrapper.local_address.inspect}"
+				task.async do |t|
+					t.annotate "binding to #{wrapper.local_address.inspect}"
 					
 					begin
 						yield wrapper, task
