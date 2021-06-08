@@ -30,7 +30,7 @@ jobs:
           - os: ubuntu
             ruby: jruby
             experimental: true
-            env: "JRUBY_OPTS=-X+O"
+            env: 'JRUBY_OPTS="-X+O --debug"'
           - os: ubuntu
             ruby: head
             experimental: true
