@@ -67,6 +67,6 @@ RSpec.describe Async::Container::Forked, if: Process.respond_to?(:fork) do
 	it_behaves_like Async::IO::SharedEndpoint, described_class
 end
 
-RSpec.describe Async::Container::Threaded, if: RUBY_PLATFORM !~ /darwin/ do
+RSpec.describe Async::Container::Threaded, if: (RUBY_PLATFORM !~ /darwin/ && RUBY_ENGINE != "jruby") do
 	it_behaves_like Async::IO::SharedEndpoint, described_class
 end
