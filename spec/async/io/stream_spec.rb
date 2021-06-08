@@ -295,6 +295,16 @@ RSpec.describe Async::IO::Stream do
 					expect(buffer.size).to be == subject.block_size
 				end
 			end
+			
+			context "has the right encoding" do
+				it "with a normal partial_read" do
+					expect(subject.read_partial(1).encoding).to be == Encoding::BINARY
+				end
+				
+				it "with a zero-length partial_read" do
+					expect(subject.read_partial(0).encoding).to be == Encoding::BINARY
+				end
+			end
 		end
 		
 		describe '#write' do

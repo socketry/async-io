@@ -72,7 +72,7 @@ module Async
 			
 			# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 			def read(size = nil)
-				return '' if size == 0
+				return String.new(encoding: Encoding::BINARY) if size == 0
 				
 				if size
 					until @eof or @read_buffer.bytesize >= size
@@ -93,7 +93,7 @@ module Async
 			
 			# Read at most `size` bytes from the stream. Will avoid reading from the underlying stream if possible.
 			def read_partial(size = nil)
-				return '' if size == 0
+				return String.new(encoding: Encoding::BINARY) if size == 0
 			
 				if !@eof and @read_buffer.empty?
 					fill_read_buffer
