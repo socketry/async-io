@@ -116,7 +116,7 @@ module Async
 				end
 				
 				if length
-					return "" if length <= 0
+					return String.new(encoding: Encoding::BINARY) if length <= 0
 					
 					# Fast path:
 					if buffer = self.sysread(length, buffer)

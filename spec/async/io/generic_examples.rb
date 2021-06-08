@@ -70,4 +70,26 @@ RSpec.shared_examples Async::IO do
 		
 		expect(subject.read).to be == data
 	end
+	
+	context "has the right encoding" do
+		it "with a normal read" do
+			io.write(data)
+			expect(subject.read(1).encoding).to be == Encoding::BINARY
+		end
+		
+		it "with a zero-length read" do
+			expect(subject.read(0).encoding).to be == Encoding::BINARY
+		end
+	end
+
+	context "are not frozen" do
+		it "with a normal read" do
+			io.write(data)
+			expect(subject.read(1).frozen?).to be == false
+		end
+		
+		it "with a zero-length read" do
+			expect(subject.read(0).frozen?).to be == false
+		end
+	end
 end
