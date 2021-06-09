@@ -168,6 +168,13 @@ RSpec.describe Async::IO::Stream do
 		include_context Async::RSpec::Reactor
 		
 		describe '#read' do
+			it "can read zero length" do
+				result = subject.read(0)
+				
+				expect(result).to be == ""
+				expect(result.encoding).to be == Encoding::BINARY
+			end
+			
 			it "should read everything" do
 				io.write "Hello World"
 				io.seek(0)
