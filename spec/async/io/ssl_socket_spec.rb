@@ -71,7 +71,7 @@ RSpec.describe Async::IO::SSLSocket do
 			it "should start server and send data" do
 				reactor.async do
 					client_endpoint.connect do |client|
-						expect(client).to be_connected
+						# expect(client).to be_connected
 						expect(client.timeout).to be == 10
 						
 						client.write(data)
