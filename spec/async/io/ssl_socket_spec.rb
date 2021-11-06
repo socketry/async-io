@@ -34,12 +34,12 @@ RSpec.describe Async::IO::SSLSocket do
 		include_context Async::RSpec::SSL::VerifiedContexts
 		
 		# Shared port for localhost network tests.
-		let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true, timeout: 10)}
-		let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context, timeout: 20)}
-		let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context, timeout: 20)}
-
+		let!(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 6779, reuse_port: true, timeout: 10)}
+		let!(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: server_context, timeout: 20)}
+		let!(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint, ssl_context: client_context, timeout: 20)}
+		
 		let(:data) {"The quick brown fox jumped over the lazy dog."}
-
+		
 		let!(:server_task) do
 			ready = Async::Queue.new
 			
