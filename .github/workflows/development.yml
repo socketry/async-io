@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test:
+    name: ${{matrix.ruby}} on ${{matrix.os}}
     runs-on: ${{matrix.os}}-latest
     continue-on-error: ${{matrix.experimental}}
     
@@ -14,9 +15,8 @@ jobs:
           - macos
         
         ruby:
-          - 2.5
-          - 2.6
-          - 2.7
+          - "2.6"
+          - "2.7"
           - "3.0"
         
         experimental: [false]
@@ -34,10 +34,6 @@ jobs:
           - os: ubuntu
             ruby: head
             experimental: true
-          - os: ubuntu
-            ruby: 2.6
-            experimental: false
-            env: COVERAGE=PartialSummary,Coveralls
     
     steps:
     - uses: actions/checkout@v2
