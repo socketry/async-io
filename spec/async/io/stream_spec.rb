@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+require 'async/io'
 require 'async/io/socket'
 require 'async/clock'
 
@@ -198,7 +199,7 @@ RSpec.describe Async::IO::Stream do
 				expect(subject).to be_eof
 			end
 		
-			context "with large content" do
+			context "with large content", if: !Async::IO.buffer? do
 				it "allocates expected amount of bytes" do
 					io.write("." * 16*1024)
 					io.seek(0)
@@ -238,7 +239,7 @@ RSpec.describe Async::IO::Stream do
 				end
 			end
 			
-			context "with large content" do
+			context "with large content", if: !Async::IO.buffer? do
 				it "allocates expected amount of bytes" do
 					subject
 					
@@ -279,7 +280,7 @@ RSpec.describe Async::IO::Stream do
 				expect(subject.read_partial(12)).to be == "Hello World!"
 			end
 			
-			context "with large content" do
+			context "with large content", if: !Async::IO.buffer? do
 				it "allocates only the amount required" do
 					expect do
 						subject.read(4*1024)

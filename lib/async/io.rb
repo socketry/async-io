@@ -34,5 +34,9 @@ module Async
 		def self.file_descriptor_limit
 			Process.getrlimit(Process::RLIMIT_NOFILE).first
 		end
+		
+		def self.buffer?
+			::IO.const_defined?(:Buffer)
+		end
 	end
 end
