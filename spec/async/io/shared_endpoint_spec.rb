@@ -27,7 +27,7 @@ RSpec.describe Async::IO::SharedEndpoint do
 	include_context Async::RSpec::Reactor
 	
 	describe '#bound' do
-		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123, timeout: 10)}
+		let(:endpoint) {Async::IO::Endpoint.udp("localhost", 5123, timeout: 10)}
 		
 		it "can bind to shared endpoint" do
 			bound_endpoint = described_class.bound(endpoint)

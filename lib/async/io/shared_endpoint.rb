@@ -29,7 +29,13 @@ module Async
 			# Create a new `SharedEndpoint` by binding to the given endpoint.
 			def self.bound(endpoint, backlog: Socket::SOMAXCONN, close_on_exec: false)
 				wrappers = endpoint.bound do |server|
-					server.listen(backlog)
+					# This is somewhat optional. We want to have a generic interface as much as possible so that users of this interface can just call it without knowing a lot of internal details. Therefore, we ignore errors here if it's because the underlying socket does not support the operation.
+					begin
+						server.listen(backlog)
+					rescue Errno::EOPNOTSUPP
+						# Ignore.
+					end
+					
 					server.close_on_exec = close_on_exec
 					server.reactor = nil
 				end
