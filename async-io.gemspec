@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 
 require_relative "lib/async/io/version"
 
@@ -6,7 +7,7 @@ Gem::Specification.new do |spec|
 	spec.version = Async::IO::VERSION
 	
 	spec.summary = "Provides support for asynchonous TCP, UDP, UNIX and SSL sockets."
-	spec.authors = ["Samuel Williams"]
+	spec.authors = ["Samuel Williams", "Aurora", "Olle Jonsson", "Bruno Sutic", "Benoit Daloze", "Cyril Roelandt", "Thibaut Girka", "Jiang Jinyang", "Janko Marohnić"]
 	spec.license = "MIT"
 	
 	spec.homepage = "https://github.com/socketry/async-io"
