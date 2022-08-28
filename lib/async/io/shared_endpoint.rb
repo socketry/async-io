@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 require_relative 'endpoint'
+require_relative 'composite_endpoint'
 
 module Async
 	module IO
@@ -62,6 +63,22 @@ module Async
 			
 			attr :endpoint
 			attr :wrappers
+			
+			def local_address_endpoint(**options)
+				endpoints = @wrappers.map do |wrapper|
+					AddressEndpoint.new(wrapper.to_io.local_address)
+				end
+				
+				return CompositeEndpoint.new(endpoints, **options)
+			end
+			
+			def remote_address_endpoint(**options)
+				endpoints = @wrappers.map do |wrapper|
+					AddressEndpoint.new(wrapper.to_io.remote_address)
+				end
+				
+				return CompositeEndpoint.new(endpoints, **options)
+			end
 			
 			# Close all the internal wrappers.
 			def close
