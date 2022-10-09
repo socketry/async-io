@@ -57,7 +57,7 @@ module Async
 			
 			alias connect_nonblock connect
 			
-			# @param duration [Numeric] the maximum time to wait for accepting a connection, if specified.
+			# @param timeout [Numeric] the maximum time to wait for accepting a connection, if specified.
 			def accept(timeout: nil, task: Task.current)
 				peer, address = async_send(:accept_nonblock, timeout: timeout)
 				wrapper = Socket.new(peer, task.reactor)
