@@ -103,12 +103,12 @@ module Async
 					wrapper = endpoint.bind
 					wrappers << wrapper
 					
-					yield wrapper
+					yield(wrapper) if block_given?
 				end
 				
 				return wrappers
-			ensure
-				wrappers.each(&:close) if $!
+			rescue
+				wrappers.each(&:close)
 			end
 			
 			# Create an Endpoint instance by URI scheme. The host and port of the URI will be passed to the Endpoint factory method, along with any options.

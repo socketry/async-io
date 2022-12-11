@@ -22,6 +22,7 @@
 
 require 'async/io/host_endpoint'
 require 'async/io/shared_endpoint'
+require 'async/io/ssl_endpoint'
 
 RSpec.describe Async::IO::SharedEndpoint do
 	include_context Async::RSpec::Reactor
@@ -72,6 +73,22 @@ RSpec.describe Async::IO::SharedEndpoint do
 			
 			connected_endpoint.close
 			server_task.stop
+		end
+	end
+	
+	describe '#bound_endpoint' do
+		let(:endpoint) {Async::IO::Endpoint.tcp("127.0.0.1", 7001, reuse_port: true, timeout: 10)}
+		let(:server_endpoint) {Async::IO::SSLEndpoint.new(endpoint)}
+		let(:client_endpoint) {Async::IO::SSLEndpoint.new(endpoint)}
+		
+		it "can create an internally shared bound endpoint" do
+			bound_endpoint = server_endpoint.bound_endpoint
+			
+			expect(bound_endpoint).to be_kind_of(server_endpoint.class)
+			expect(bound_endpoint.endpoint).to be_kind_of(Async::IO::SharedEndpoint)
+			
+		ensure
+			bound_endpoint.close
 		end
 	end
 end

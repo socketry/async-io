@@ -132,5 +132,15 @@ module Async
 				"\#<#{self.class} #{@wrappers.size} descriptors for #{@endpoint}>"
 			end
 		end
+		
+		class Endpoint
+			def bound_endpoint(**options)
+				SharedEndpoint.bound(self, **options)
+			end
+			
+			def connected_endpoint(**options)
+				SharedEndpoint.connected(self, **options)
+			end
+		end
 	end
 end

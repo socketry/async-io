@@ -26,12 +26,14 @@ require_relative 'ssl_socket'
 module Async
 	module IO
 		class SSLEndpoint < Endpoint
-			def initialize(endpoint, **options)
+			def initialize(endpoint, context = nil, **options)
 				super(**options)
 				
 				@endpoint = endpoint
 				
-				if ssl_context = options[:ssl_context]
+				if context
+					@context = context
+				elsif ssl_context = options[:ssl_context]
 					@context = build_context(ssl_context)
 				else
 					@context = nil
@@ -99,6 +101,15 @@ module Async
 					yield self.class.new(endpoint, **@options)
 				end
 			end
+			
+			# I explored this idea but I'm not sure it's a good one as bound endpoints don't have the same life-time as normal endpoints.
+			# def bound_endpoint(**options)
+			# 	self.class.new(@endpoint.bound_endpoint(**options), @context, **@options)
+			# end
+			# 
+			# def connected_endpoint(**options)
+			# 	self.class.new(@endpoint.connected_endpoint(**options), @context, **@options)
+			# end
 		end
 		
 		# Backwards compatibility.
