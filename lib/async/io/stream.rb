@@ -114,7 +114,9 @@ module Async
 				raise exception, "encountered eof while reading data"
 			end
 			
-			alias readpartial read_partial
+			def readpartial
+				read_partial or raise EOFError, "Encountered eof while reading data!"
+			end
 			
 			# Efficiently read data from the stream until encountering pattern.
 			# @param pattern [String] The pattern to match.
