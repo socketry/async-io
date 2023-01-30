@@ -114,8 +114,8 @@ module Async
 				raise exception, "encountered eof while reading data"
 			end
 			
-			def readpartial
-				read_partial or raise EOFError, "Encountered eof while reading data!"
+			def readpartial(size = nil)
+				read_partial(size) or raise EOFError, "Encountered eof while reading data!"
 			end
 			
 			# Efficiently read data from the stream until encountering pattern.
