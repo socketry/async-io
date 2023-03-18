@@ -39,7 +39,7 @@ RSpec.describe Async::IO::Notification do
 		signalling_task.wait
 		waiting_task.wait
 		
-		expect(waiting_task.status).to be :complete
+		expect(waiting_task).to be_complete
 		
 		subject.close
 	end
