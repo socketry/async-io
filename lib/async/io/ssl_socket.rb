@@ -89,11 +89,12 @@ module Async
 			end
 			
 			def close_write
-				self.shutdown(Socket::SHUT_WR)
+				# Invokes SSL_shutdown, which sends a close_notify message to the peer.
+				@io.__send__(:stop)
 			end
 			
 			def close_read
-				self.shutdown(Socket::SHUT_RD)
+				@io.to_io.shutdown(Socket::SHUT_RD)
 			end
 			
 			def shutdown(how)

@@ -73,7 +73,7 @@ RSpec.describe Async::IO::SSLServer do
 				end
 				
 				server_task.stop
-			end
+			end.wait
 		end
 	end
 	
@@ -123,7 +123,7 @@ RSpec.describe Async::IO::SSLServer do
 				end
 				
 				server_task.stop
-			end
+			end.wait
 		end
 		
 		it 'it fails with invalid host' do
