@@ -136,7 +136,7 @@ module Async
 				
 				return wrapper, address unless block_given?
 				
-				task.async do
+				task.async do |task|
 					task.annotate "accepting secure connection #{address.inspect}"
 					
 					begin
