@@ -120,7 +120,7 @@ module Async
 				self.class.new(@server.dup, @context)
 			end
 			
-			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=, :timeout, :timeout=
+			def_delegators :@server, :local_address, :setsockopt, :getsockopt, :close, :close_on_exec=, :reactor=, :timeout, :timeout=, :to_io
 			
 			attr :server
 			attr :context
