@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-# This is useful for specs, but I hesitate to monkey patch a core class in the library itself.
+# Released under the MIT License.
+# Copyright, 2018-2023, by Samuel Williams.
+
 class Addrinfo
 	def == other
 		self.to_s == other.to_s

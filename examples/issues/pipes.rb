@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-# wat.rb
+# Released under the MIT License.
+# Copyright, 2019-2023, by Samuel Williams.
+
 require 'async'
 require_relative '../../lib/async/io'
 require 'digest/sha1'
