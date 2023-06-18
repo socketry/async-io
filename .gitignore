@@ -1,13 +1,8 @@
 /.bundle/
-/.yardoc
-/gems.locked
-/_yardoc/
-/coverage/
-/doc/
 /pkg/
-/spec/reports/
-/tmp/
+/gems.locked
+/.covered.db
+/external
 
-# rspec failure tracking
-.rspec_status
-.tags
+/.rspec
+/.rspec_status

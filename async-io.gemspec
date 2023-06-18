@@ -7,12 +7,15 @@ Gem::Specification.new do |spec|
 	spec.version = Async::IO::VERSION
 	
 	spec.summary = "Provides support for asynchonous TCP, UDP, UNIX and SSL sockets."
-	spec.authors = ["Samuel Williams", "Aurora", "Olle Jonsson", "Bruno Sutic", "Benoit Daloze", "Cyril Roelandt", "Thibaut Girka", "Jiang Jinyang", "Janko Marohnić"]
+	spec.authors = ["Samuel Williams", "Olle Jonsson", "Benoit Daloze", "Thibaut Girka", "Janko Marohnić", "Aurora Nockert", "Bruno Sutic", "Cyril Roelandt", "Hal Brodigan", "Jiang Jinyang"]
 	spec.license = "MIT"
+	
+	spec.cert_chain  = ['release.cert']
+	spec.signing_key = File.expand_path('~/.gem/release.pem')
 	
 	spec.homepage = "https://github.com/socketry/async-io"
 	
-	spec.files = Dir.glob('{lib}/**/*', File::FNM_DOTMATCH, base: __dir__)
+	spec.files = Dir.glob(['{lib}/**/*', '*.md'], File::FNM_DOTMATCH, base: __dir__)
 	
 	spec.required_ruby_version = ">= 2.5"
 	
