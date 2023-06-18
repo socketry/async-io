@@ -17,9 +17,10 @@ Gem::Specification.new do |spec|
 	
 	spec.files = Dir.glob(['{lib}/**/*', '*.md'], File::FNM_DOTMATCH, base: __dir__)
 	
-	spec.required_ruby_version = ">= 2.5"
+	spec.required_ruby_version = ">= 3.2"
 	
 	spec.add_dependency "async"
+	spec.add_dependency "io-endpoint"
 	
 	spec.add_development_dependency "async-container", "~> 0.15"
 	spec.add_development_dependency "async-rspec", "~> 1.10"
