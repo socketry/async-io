@@ -50,10 +50,11 @@ module Async
 			
 			def local_address_endpoint(**options)
 				endpoints = @wrappers.map do |wrapper|
-					AddressEndpoint.new(wrapper.to_io.local_address)
+					# Forward the options to the internal endpoints:
+					AddressEndpoint.new(wrapper.to_io.local_address, **options)
 				end
 				
-				return CompositeEndpoint.new(endpoints, **options)
+				return CompositeEndpoint.new(endpoints)
 			end
 			
 			def remote_address_endpoint(**options)
