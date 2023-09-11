@@ -18,6 +18,9 @@ module Async
 				# If we can wait for the socket to become readable, we know that the socket may still be open.
 				result = to_io.recv_nonblock(1, MSG_PEEK, exception: false)
 				
+				# No data was available - newer Ruby can return nil instead of empty string:
+				return false if result.nil?
+				
 				# Either there was some data available, or we can wait to see if there is data avaialble.
 				return !result.empty? || result == :wait_readable
 				
