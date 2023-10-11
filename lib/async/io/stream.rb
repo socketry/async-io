@@ -46,9 +46,6 @@ module Async
 				@read_buffer = Buffer.new
 				@write_buffer = Buffer.new
 				@drain_buffer = Buffer.new
-				
-				# Used as destination buffer for underlying reads.
-				@input_buffer = Buffer.new
 			end
 			
 			attr :io
@@ -244,18 +241,13 @@ module Async
 				# This effectively ties the input and output stream together.
 				flush
 				
-				if @read_buffer.empty?
-					if @io.read_nonblock(size, @read_buffer, exception: false)
-						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
-						return true
-					end
-				else
-					if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
-						@read_buffer << chunk
-						# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
+				input_buffer = Buffer.new
+		
+				if chunk = @io.read_nonblock(size, input_buffer, exception: false)
+					@read_buffer << chunk
+					# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 						
-						return true
-					end
+					return true
 				end
 				
 				# else for both cases above:
