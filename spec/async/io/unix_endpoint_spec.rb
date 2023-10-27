@@ -5,7 +5,6 @@
 
 require 'async/io/unix_endpoint'
 require 'async/io/stream'
-require 'fileutils'
 
 RSpec.describe Async::IO::UNIXEndpoint do
 	include_context Async::RSpec::Reactor
@@ -13,14 +12,6 @@ RSpec.describe Async::IO::UNIXEndpoint do
 	let(:data) {"The quick brown fox jumped over the lazy dog."} 
 	let(:path) {File.join(__dir__, "unix-socket")}
 	subject {described_class.unix(path)}
-	
-	before(:each) do
-		FileUtils.rm_f path
-	end
-	
-	after do
-		FileUtils.rm_f path
-	end
 	
 	it "should echo data back to peer" do
 		server_task = reactor.async do
