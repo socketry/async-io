@@ -39,6 +39,20 @@ RSpec.describe Async::IO::UNIXEndpoint do
 		
 		server_task.stop
 	end
+
+  it "should not fail to bind if there are no existing bindings on the socket" do
+    server_task1 = reactor.async do
+			subject.bind
+		end
+		server_task1.stop
+
+    server_task2 = reactor.async do
+      expect do
+				subject.bind
+			end.to_not raise_error
+    end
+    server_task2.stop
+  end
 	
 	it "should fails to bind if there is an existing binding" do
 		condition = Async::Condition.new
