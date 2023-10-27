@@ -5,7 +5,6 @@
 
 require 'async/io/unix_endpoint'
 require 'async/io/stream'
-require 'fileutils'
 
 RSpec.describe Async::IO::UNIXEndpoint do
 	include_context Async::RSpec::Reactor
@@ -13,14 +12,6 @@ RSpec.describe Async::IO::UNIXEndpoint do
 	let(:data) {"The quick brown fox jumped over the lazy dog."} 
 	let(:path) {File.join(__dir__, "unix-socket")}
 	subject {described_class.unix(path)}
-	
-	before(:each) do
-		FileUtils.rm_f path
-	end
-	
-	after do
-		FileUtils.rm_f path
-	end
 	
 	it "should echo data back to peer" do
 		server_task = reactor.async do
@@ -39,6 +30,20 @@ RSpec.describe Async::IO::UNIXEndpoint do
 		
 		server_task.stop
 	end
+
+  it "should not fail to bind if there are no existing bindings on the socket" do
+    server_task1 = reactor.async do
+			subject.bind
+		end
+		server_task1.stop
+
+    server_task2 = reactor.async do
+      expect do
+				subject.bind
+			end.to_not raise_error
+    end
+    server_task2.stop
+  end
 	
 	it "should fails to bind if there is an existing binding" do
 		condition = Async::Condition.new
