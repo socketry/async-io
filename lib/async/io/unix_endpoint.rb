@@ -5,6 +5,7 @@
 # Copyright, 2019, by Olle Jonsson.
 
 require_relative 'address_endpoint'
+require 'fileutils'
 
 module Async
 	module IO

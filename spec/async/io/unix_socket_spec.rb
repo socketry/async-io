@@ -6,6 +6,7 @@
 require 'async/io/unix_socket'
 
 require_relative 'generic_examples'
+require 'fileutils'
 
 RSpec.describe Async::IO::UNIXSocket do
 	include_context Async::RSpec::Reactor
