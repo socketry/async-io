@@ -21,7 +21,6 @@ group :test do
 	gem "bake-test-external"
 	
 	gem 'benchmark-ips'
-	gem 'ruby-prof', platforms: :mri
 	
 	gem 'http'
 end
