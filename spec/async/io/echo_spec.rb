@@ -5,6 +5,7 @@
 # Copyright, 2020, by Benoit Daloze.
 
 require 'async/io'
+require 'async/io/address'
 
 RSpec.describe "echo client/server" do
 	include_context Async::RSpec::Reactor
@@ -12,23 +13,28 @@ RSpec.describe "echo client/server" do
 	let(:server_address) {Async::IO::Address.tcp('0.0.0.0', 9002)}
 	
 	def echo_server(server_address)
-		Async do |task|
-			# This is a synchronous block within the current task:
-			Async::IO::Socket.accept(server_address) do |client|
+		server = server_address.bind
+		server.listen(10)
+		
+		Async do
+			while true
+				peer, address = server.accept
 				# This is an asynchronous block within the current reactor:
-				data = client.read(512)
+				data = peer.read(512)
 				
 				# This produces out-of-order responses.
-				task.sleep(rand * 0.01)
+				sleep(rand * 0.01)
 				
-				client.write(data)
+				peer.write(data)
 			end
+		ensure
+			server.close
 		end
 	end
 	
 	def echo_client(server_address, data, responses)
 		Async do |task|
-			Async::IO::Socket.connect(server_address) do |peer|
+			server_address.connect do |peer|
 				result = peer.write(data)
 				peer.close_write
 				
@@ -49,7 +55,7 @@ RSpec.describe "echo client/server" do
 			echo_client(server_address, "Hello World #{i}", responses)
 		end
 		
-		# task.reactor.print_hierarchy
+		# reactor.print_hierarchy
 		
 		tasks.each(&:wait)
 		server.stop
