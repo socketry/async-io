@@ -125,7 +125,17 @@ module Async
 				return matched
 			end
 			
-			def peek
+			def peek(size = nil)
+				if size
+					until @eof or @read_buffer.bytesize >= size
+						# Compute the amount of data we need to read from the underlying stream:
+						read_size = size - @read_buffer.bytesize
+						
+						# Don't read less than @block_size to avoid lots of small reads:
+						fill_read_buffer(read_size > @block_size ? read_size : @block_size)
+					end
+					return @read_buffer[..[size, @read_buffer.size].min]
+				end
 				until yield(@read_buffer) or @eof
 					fill_read_buffer
 				end
