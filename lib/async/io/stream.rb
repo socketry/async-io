@@ -139,6 +139,7 @@ module Async
 				until (block_given? && yield(@read_buffer)) or @eof
 					fill_read_buffer
 				end
+				return @read_buffer
 			end
 			
 			def gets(separator = $/, **options)
