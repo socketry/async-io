@@ -215,7 +215,7 @@ RSpec.describe Async::IO::Stream do
 				io.write "Hello World"
 				io.seek(0)
 				
-				expect(subject.io).to receive(:read_nonblock).and_call_original.once
+				expect(subject.io).to receive(:read_nonblock).and_call_original.twice
 				
 				expect(subject.peek(400)).to be == "Hello World"
 				expect(subject.read_partial(400)).to be == "Hello World"
