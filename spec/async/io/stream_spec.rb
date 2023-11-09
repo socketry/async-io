@@ -162,7 +162,7 @@ RSpec.describe Async::IO::Stream do
 				expect(result.encoding).to be == Encoding::BINARY
 			end
 			
-			it "should read everything" do
+			it "reads everything" do
 				io.write "Hello World"
 				io.seek(0)
 				
@@ -172,7 +172,7 @@ RSpec.describe Async::IO::Stream do
 				expect(subject).to be_eof
 			end
 		
-			it "should read only the amount requested" do
+			it "reads only the amount requested" do
 				io.write "Hello World"
 				io.seek(0)
 				
@@ -185,7 +185,7 @@ RSpec.describe Async::IO::Stream do
 				expect(subject).to be_eof
 			end
 			
-			it "should peek everything" do
+			it "peeks everything" do
 				io.write "Hello World"
 				io.seek(0)
 				
@@ -196,7 +196,7 @@ RSpec.describe Async::IO::Stream do
 				expect(subject).to be_eof
 			end
 		
-			it "should peek only the amount requested" do
+			it "peeks only the amount requested" do
 				io.write "Hello World"
 				io.seek(0)
 				
