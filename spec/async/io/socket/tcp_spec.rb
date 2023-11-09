@@ -28,7 +28,7 @@ RSpec.describe Async::IO::Socket do
 	
 	describe 'basic tcp server' do
 		it "should start server and send data" do
-			Async::IO::Socket.connect(server_address) do |client|
+			server_address.connect do |client|
 				client.write(data)
 				client.close_write
 				

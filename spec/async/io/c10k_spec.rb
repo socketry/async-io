@@ -34,14 +34,14 @@ RSpec.describe "c10k echo client/server", if: Process.respond_to?(:fork) do
 		Async do |task|
 			connections = []
 			
-			Async::IO::Socket.bind(server_address) do |server|
+			server_address.bind do |server|
 				server.listen(Socket::SOMAXCONN)
 				
 				while connections.size < repeats
 					peer, address = server.accept
 					connections << peer
 				end
-			end.wait
+			end
 			
 			Console.logger.info("Releasing #{connections.size} connections...")
 			
@@ -55,7 +55,7 @@ RSpec.describe "c10k echo client/server", if: Process.respond_to?(:fork) do
 	def echo_client(server_address, data, responses)
 		Async do |task|
 			begin
-				Async::IO::Socket.connect(server_address) do |peer|
+				server_address.connect do |peer|
 					responses << peer.read(1)
 				end
 			rescue Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EADDRINUSE
