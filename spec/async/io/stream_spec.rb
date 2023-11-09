@@ -184,6 +184,43 @@ RSpec.describe Async::IO::Stream do
 				expect(subject.read_partial(20)).to be == "o World"
 				expect(subject).to be_eof
 			end
+			
+			it "should peek everything" do
+				io.write "Hello World"
+				io.seek(0)
+				
+				expect(subject.io).to receive(:read_nonblock).and_call_original.twice
+				
+				expect(subject.peek).to be == "Hello World"
+				expect(subject.read).to be == "Hello World"
+				expect(subject).to be_eof
+			end
+		
+			it "should peek only the amount requested" do
+				io.write "Hello World"
+				io.seek(0)
+				
+				expect(subject.io).to receive(:read_nonblock).and_call_original.twice
+				
+				expect(subject.peek(4)).to be == "Hell"
+				expect(subject.read_partial(4)).to be == "Hell"
+				expect(subject).to_not be_eof
+				
+				expect(subject.peek(20)).to be == "o World"
+				expect(subject.read_partial(20)).to be == "o World"
+				expect(subject).to be_eof
+			end
+
+			it "peeks everything when requested bytes is too large" do
+				io.write "Hello World"
+				io.seek(0)
+				
+				expect(subject.io).to receive(:read_nonblock).and_call_original.twice
+				
+				expect(subject.peek(400)).to be == "Hello World"
+				expect(subject.read_partial(400)).to be == "Hello World"
+				expect(subject).to be_eof
+			end
 		
 			context "with large content", if: !Async::IO.buffer? do
 				it "allocates expected amount of bytes" do
