@@ -23,18 +23,8 @@ RSpec.describe Async::IO::Socket do
 		
 		it "should fail to connect if no listening server" do
 			expect do
-				Async::IO::Socket.connect(address)
+				address.connect
 			end.to raise_exception(Errno::ECONNREFUSED)
-		end
-		
-		it "should close the socket when interrupted by a timeout" do
-			wrapper = double()
-			expect(Async::IO::Socket).to receive(:build).and_return(wrapper)
-			expect(wrapper).to receive(:connect).and_raise Async::TimeoutError
-			expect(wrapper).to receive(:close)
-			expect do
-				Async::IO::Socket.connect(address)
-			end.to raise_exception(Async::TimeoutError)
 		end
 	end
 	

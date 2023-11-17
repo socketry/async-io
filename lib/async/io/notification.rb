@@ -10,11 +10,7 @@ module Async
 		# A cross-reactor/process notification pipe.
 		class Notification
 			def initialize
-				pipe = ::IO.pipe
-				
-				# We could call wait and signal from different reactors/threads/processes, so we don't create wrappers here, because they are not thread safe by design.
-				@input = pipe.first
-				@output = pipe.last
+				@input, @output = ::IO.pipe
 			end
 			
 			def close
@@ -25,20 +21,13 @@ module Async
 			# Wait for signal to be called.
 			# @return [Object]
 			def wait
-				wrapper = Async::IO::Generic.new(@input)
-				wrapper.read(1)
-			ensure
-				# Remove the wrapper from the reactor.
-				wrapper.reactor = nil
+				@input.read(1)
 			end
 			
 			# Signal to a given task that it should resume operations.
 			# @return [void]
 			def signal
-				wrapper = Async::IO::Generic.new(@output)
-				wrapper.write(".")
-			ensure
-				wrapper.reactor = nil
+				@output.write(".")
 			end
 		end
 	end
