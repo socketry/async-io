@@ -134,7 +134,7 @@ module Async
 						# Don't read less than @block_size to avoid lots of small reads:
 						fill_read_buffer(read_size > @block_size ? read_size : @block_size)
 					end
-					return @read_buffer[..([size, @read_buffer.size].min - 1)]
+					return @read_buffer.slice(0, [size, @read_buffer.size].min)
 				end
 				until (block_given? && yield(@read_buffer)) or @eof
 					fill_read_buffer
