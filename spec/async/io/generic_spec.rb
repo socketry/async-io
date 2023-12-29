@@ -70,6 +70,32 @@ RSpec.describe Async::IO::Generic do
 			
 			[reader, writer].each(&:wait)
 		end
+
+    it "can wait for anything" do
+			reader = reactor.async do |task|
+				duration = Async::Clock.measure do
+					input.wait(1, nil)
+				end
+
+				expect(duration).to be >= wait_duration
+				expect(input.read(1024)).to be == message
+
+				input.close
+			end
+
+			writer = reactor.async do |task|
+				duration = Async::Clock.measure do
+					output.wait(1, :write)
+				end
+				
+				task.sleep(wait_duration)
+				
+				output.write(message)
+				output.close
+			end
+			
+			[reader, writer].each(&:wait)
+    end
 		
 		it "can return nil when timeout is exceeded" do
 			reader = reactor.async do |task|
