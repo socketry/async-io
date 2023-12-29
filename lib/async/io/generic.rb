@@ -169,7 +169,7 @@ module Async
 				when :write
 					wait_writable(timeout)
 				else
-					wait_any(:rw, timeout)
+					wait_any(timeout)
 				end
 			rescue TimeoutError
 				return nil
