@@ -11,6 +11,7 @@ require_relative "io/version"
 
 require_relative "io/endpoint"
 require_relative "io/endpoint/each"
+require_relative "io/shared_endpoint"
 
 module Async
 	module IO
