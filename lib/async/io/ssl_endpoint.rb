@@ -65,7 +65,9 @@ module Async
 						yield SSLServer.new(server, context)
 					end
 				else
-					return SSLServer.new(@endpoint.bind, context)
+					@endpoint.bind.map do |server|
+						SSLServer.new(server, context)
+					end
 				end
 			end
 			
