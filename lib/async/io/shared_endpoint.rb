@@ -12,8 +12,10 @@ module Async
 		# Pre-connect and pre-bind sockets so that it can be used between processes.
 		class SharedEndpoint < Endpoint
 			# Create a new `SharedEndpoint` by binding to the given endpoint.
-			def self.bound(endpoint, backlog: Socket::SOMAXCONN, close_on_exec: false)
-				wrappers = endpoint.bound do |server|
+			def self.bound(endpoint, backlog: Socket::SOMAXCONN, close_on_exec: false, **options)
+				sockets = Array(endpoint.bind(**options))
+				
+				wrappers = sockets.each do |server|
 					# This is somewhat optional. We want to have a generic interface as much as possible so that users of this interface can just call it without knowing a lot of internal details. Therefore, we ignore errors here if it's because the underlying socket does not support the operation.
 					begin
 						server.listen(backlog)
@@ -115,6 +117,16 @@ module Async
 			
 			def to_s
 				"\#<#{self.class} #{@wrappers.size} descriptors for #{@endpoint}>"
+			end
+		end
+		
+		class Endpoint
+			def bound(**options)
+				SharedEndpoint.bound(self, **options)
+			end
+			
+			def connected(**options)
+				SharedEndpoint.connected(self, **options)
 			end
 		end
 	end
