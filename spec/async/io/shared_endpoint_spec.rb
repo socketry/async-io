@@ -10,7 +10,7 @@ RSpec.describe Async::IO::SharedEndpoint do
 	include_context Async::RSpec::Reactor
 	
 	describe '#bound' do
-		let(:endpoint) {Async::IO::Endpoint.udp("localhost", 5123, timeout: 10)}
+		let(:endpoint) {Async::IO::Endpoint.tcp("localhost", 5123, timeout: 10)}
 		
 		it "can bind to shared endpoint" do
 			bound_endpoint = described_class.bound(endpoint)
@@ -32,6 +32,41 @@ RSpec.describe Async::IO::SharedEndpoint do
 			expect(wrapper).to be_close_on_exec
 			
 			bound_endpoint.close
+		end
+		
+		it "can close a bound endpoint to terminate accept loop" do
+			bound_endpoint = described_class.bound(endpoint)
+			expect(bound_endpoint.wrappers).to_not be_empty
+			
+			server_task = Async do
+				bound_endpoint.accept do |io|
+					io.close
+				end
+			end
+			
+			connect = proc do
+				endpoint.connect do |io|
+					io.write "Hello World"
+					io.close
+				end
+			end
+			
+			connect.call
+			
+			wrapper = bound_endpoint.wrappers.first
+			expect(wrapper).to be_a Async::IO::Socket
+			
+			bound_endpoint.close
+			expect(wrapper).to be_closed
+			
+			expect do
+				begin
+					# Either ECONNRESET or ECONNREFUSED can be raised here.
+					connect.call
+				rescue Errno::ECONNRESET
+					raise Errno::ECONNREFUSED
+				end
+			end.to raise_error(Errno::ECONNREFUSED)
 		end
 	end
 	

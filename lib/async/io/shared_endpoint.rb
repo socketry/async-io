@@ -77,16 +77,9 @@ module Async
 				task = Async::Task.current
 				
 				@wrappers.each do |server|
-					server = server.dup
-					
 					task.async do |task|
 						task.annotate "binding to #{server.inspect}"
-						
-						begin
-							yield server, task
-						ensure
-							server.close
-						end
+						yield server, task
 					end
 				end
 			end
@@ -109,9 +102,9 @@ module Async
 				end
 			end
 			
-			def accept(backlog = nil, &block)
+			def accept(backlog = nil, **options, &block)
 				bind do |server|
-					server.accept_each(&block)
+					server.accept_each(**options, &block)
 				end
 			end
 			
