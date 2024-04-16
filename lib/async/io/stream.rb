@@ -4,6 +4,7 @@
 # Copyright, 2017-2023, by Samuel Williams.
 # Copyright, 2018, by Janko Marohnić.
 # Copyright, 2021, by Aurora Nockert.
+# Copyright, 2023, by Maruth Goyal.
 
 require_relative 'buffer'
 require_relative 'generic'

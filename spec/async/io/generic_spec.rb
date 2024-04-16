@@ -2,6 +2,7 @@
 
 # Released under the MIT License.
 # Copyright, 2017-2023, by Samuel Williams.
+# Copyright, 2023, by Patrik Wenger.
 
 require 'async/io'
 require 'async/clock'
