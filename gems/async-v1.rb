@@ -6,5 +6,6 @@
 source 'https://rubygems.org'
 
 gemspec path: "../"
+eval_gemfile "../gems.rb"
 
 gem 'async', '~> 1.0'
