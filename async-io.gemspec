@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
 	spec.version = Async::IO::VERSION
 	
 	spec.summary = "Provides support for asynchonous TCP, UDP, UNIX and SSL sockets."
-	spec.authors = ["Samuel Williams", "Olle Jonsson", "Benoit Daloze", "Thibaut Girka", "Janko Marohnić", "Aurora Nockert", "Bruno Sutic", "Cyril Roelandt", "Hal Brodigan", "Jiang Jinyang"]
+	spec.authors = ["Samuel Williams", "Olle Jonsson", "Benoit Daloze", "Thibaut Girka", "Hal Brodigan", "Janko Marohnić", "Aurora Nockert", "Bruno Sutic", "Cyril Roelandt", "Hasan Kumar", "Jiang Jinyang", "Maruth Goyal", "Patrik Wenger"]
 	spec.license = "MIT"
 	
 	spec.cert_chain  = ['release.cert']
@@ -15,16 +15,14 @@ Gem::Specification.new do |spec|
 	
 	spec.homepage = "https://github.com/socketry/async-io"
 	
+	spec.metadata = {
+		"documentation_uri" => "https://socketry.github.io/async-io/",
+		"source_code_uri" => "https://github.com/socketry/async-io.git",
+	}
+	
 	spec.files = Dir.glob(['{lib}/**/*', '*.md'], File::FNM_DOTMATCH, base: __dir__)
 	
 	spec.required_ruby_version = ">= 2.5"
 	
 	spec.add_dependency "async"
-	
-	spec.add_development_dependency "async-container", "~> 0.15"
-	spec.add_development_dependency "async-rspec", "~> 1.10"
-	spec.add_development_dependency "bake"
-	spec.add_development_dependency "covered"
-	spec.add_development_dependency "rack-test"
-	spec.add_development_dependency "rspec", "~> 3.6"
 end

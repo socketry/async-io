@@ -5,6 +5,8 @@
 # Copyright, 2018, by Janko Marohnić.
 # Copyright, 2019, by Benoit Daloze.
 # Copyright, 2021, by Aurora Nockert.
+# Copyright, 2023, by Maruth Goyal.
+# Copyright, 2023, by Olle Jonsson.
 
 require 'async/io'
 require 'async/io/socket'

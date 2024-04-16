@@ -3,6 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2019-2023, by Samuel Williams.
 # Copyright, 2019, by Olle Jonsson.
+# Copyright, 2023, by Hasan Kumar.
 
 require_relative 'address_endpoint'
 
