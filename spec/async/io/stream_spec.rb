@@ -23,6 +23,26 @@ RSpec.describe Async::IO::Stream do
 		end
 	end
 	
+	context "native I/O", if: RUBY_VERSION >= "3.1" do
+		let(:sockets) do
+			@sockets = ::Socket.pair(::Socket::AF_UNIX, ::Socket::SOCK_STREAM)
+		end
+		
+		after do
+			@sockets.each(&:close)
+		end
+		
+		let(:io) {sockets.first}
+		subject {described_class.new(sockets.last)}
+		
+		it "can read data" do
+			io.write("Hello World")
+			io.close_write
+			
+			expect(subject.read).to be == "Hello World"
+		end
+	end
+	
 	context "socket I/O" do
 		let(:sockets) do
 			@sockets = Async::IO::Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)
