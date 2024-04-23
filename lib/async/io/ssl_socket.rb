@@ -118,8 +118,12 @@ module Async
 				@server.listen(*args)
 			end
 			
-			def accept(task: Task.current, **options)
-				peer, address = @server.accept(**options)
+			def accept(task: Task.current, timeout: nil)
+				peer, address = @server.accept
+				
+				if timeout and peer.respond_to?(:timeout=)
+					peer.timeout = timeout
+				end
 				
 				wrapper = SSLSocket.new(peer, @context)
 				
