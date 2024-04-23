@@ -63,7 +63,9 @@ module Async
 					# This ensures that when the internal IO is closed, it also closes the internal socket:
 					io.sync_close = true
 					
-					@timeout = socket.timeout
+					if socket.respond_to?(:timeout)
+						@timeout = socket.timeout
+					end
 				end
 			end
 			
