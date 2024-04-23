@@ -24,7 +24,10 @@ module Async
 					end
 					
 					server.close_on_exec = close_on_exec
-					server.reactor = nil
+					
+					if server.respond_to?(:reactor=)
+						server.reactor = nil
+					end
 				end
 				
 				return self.new(endpoint, wrappers)
@@ -35,7 +38,10 @@ module Async
 				wrapper = endpoint.connect
 				
 				wrapper.close_on_exec = close_on_exec
-				wrapper.reactor = nil
+				
+				if wrapper.respond_to?(:reactor=)
+					wrapper.reactor = nil
+				end
 				
 				return self.new(endpoint, [wrapper])
 			end
