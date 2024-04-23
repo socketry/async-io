@@ -51,10 +51,14 @@ module Async
 					super
 				else
 					io = self.class.wrapped_klass.new(socket.to_io, context)
-					super(io, socket.reactor)
-					
-					# We detach the socket from the reactor, otherwise it's possible to add the file descriptor to the selector twice, which is bad.
-					socket.reactor = nil
+					if socket.respond_to?(:reactor)
+						super(io, socket.reactor)
+						
+						# We detach the socket from the reactor, otherwise it's possible to add the file descriptor to the selector twice, which is bad.
+						socket.reactor = nil
+					else
+						super(io)
+					end
 					
 					# This ensures that when the internal IO is closed, it also closes the internal socket:
 					io.sync_close = true

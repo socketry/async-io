@@ -192,6 +192,10 @@ module Async
 				!@io.closed?
 			end
 			
+			def readable?
+				@io.readable?
+			end
+			
 			attr_accessor :timeout
 			
 			protected
