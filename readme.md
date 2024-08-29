@@ -1,5 +1,8 @@
 # Async::IO
 
+> [!CAUTION]
+> This library is deprecated and should not be used in new projects. Instead, you should use <https://github.com/socketry/io-endpoint> for the endpoint-related functionality, and <https://github.com/socketry/io-stream> for stream/buffering functionality.
+
 Async::IO provides builds on [async](https://github.com/socketry/async) and provides asynchronous wrappers for `IO`, `Socket`, and related classes.
 
 [![Development Status](https://github.com/socketry/async-io/workflows/Test/badge.svg)](https://github.com/socketry/async-io/actions?workflow=Test)
